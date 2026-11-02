@@ -4,6 +4,7 @@ import { BuscarUnidadesDto } from './dto/buscar-unidades.dto.js';
 import { SupabaseService } from '../supabase/supabase.service.js';
 import type { Request as ExpressRequest } from 'express';
 import { getExchangeRates } from './exchange-rates.js';
+import { obtenerDisponibilidad } from '../common/disponibilidad.js';
 
 @Controller('marketplace')
 export class MarketplaceController {
@@ -15,6 +16,17 @@ export class MarketplaceController {
   @Get('unidades')
   findAll(@Query() query: BuscarUnidadesDto) {
     return this.marketplaceService.findAll(query);
+  }
+
+  @Get('unidades/:id/disponibilidad')
+  async disponibilidad(
+    @Param('id') id: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    // This endpoint is intentionally anonymous and has no path to private
+    // alquiler IDs, tenant names, payments or operational comments.
+    return obtenerDisponibilidad(this.supabaseService, id, desde, hasta);
   }
 
   @Get('unidades/:id')
