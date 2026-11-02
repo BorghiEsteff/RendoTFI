@@ -73,7 +73,7 @@ export default async function InquilinosPage() {
             )}
           </div>
           <p className="text-muted-foreground mt-1">
-            Gestioná los datos de tus inquilinos para asociarlos a los contratos.
+            Directorio compartido con el gestor y sus delegados autorizados. Los inquilinos de otros gestores permanecen privados.
           </p>
         </div>
         {token && !isReadOnly && !tenantsLoadError && <InquilinoFormModal token={token} />}
@@ -113,7 +113,7 @@ export default async function InquilinosPage() {
                       <TableCell className="font-medium">{inq.nombre_completo}</TableCell>
                       <TableCell>{inq.email || '-'}</TableCell>
                       <TableCell>{inq.telefono || '-'}</TableCell>
-                      <TableCell>{inq.documento_identidad || '-'}</TableCell>
+                      <TableCell>{inq.documento || inq.documento_identidad || '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -128,7 +128,7 @@ export default async function InquilinosPage() {
                   <div className="text-xs text-muted-foreground space-y-0.5 font-mono">
                     {inq.email && <div>Email: {inq.email}</div>}
                     {inq.telefono && <div>Tel: {inq.telefono}</div>}
-                    {inq.documento_identidad && <div>Doc: {inq.documento_identidad}</div>}
+                    {(inq.documento || inq.documento_identidad) && <div>DNI: {inq.documento || inq.documento_identidad}</div>}
                   </div>
                 </div>
               ))}
