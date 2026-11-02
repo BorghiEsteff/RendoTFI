@@ -15,3 +15,11 @@
 
 
 
+
+## Actualización 2026-11-02 — REN-COB-01
+
+- Nueva feature `specs/009-cobranzas-cuotas-deudas/` con SDD/TDD `docs/architecture/REN-COB-01-sdd-tdd-spec.md`, ADR `docs/architecture/ADR-REN-COB-01-contractual-ledger.md` y evidencia SQL.
+- Se creó módulo independiente de cuentas por cobrar: cuotas, pagos parciales, estados vencidos y anulaciones auditadas. Aparte de compras de cupo SaaS, garantías y fiscalidad.
+- Migración aditiva aplicada a Supabase Beta; no genera cuotas ni cobros automáticamente. Pruebas SQL transaccionales PASS, sin modificar los 2 alquileres actuales.
+- API y web compilan en Vercel; Vitest, Playwright con sesiones reales y concurrencia simultánea NO RUN. No se utilizaron GitHub Actions.
+- Estado de feature: implementada y con validación SQL/compilación, **pendiente de aceptación funcional real**. Los estados históricos N01–N08 arriba no se convierten en PASS por esta entrega.
