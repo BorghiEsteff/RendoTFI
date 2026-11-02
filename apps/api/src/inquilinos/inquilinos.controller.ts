@@ -55,24 +55,9 @@ export class InquilinosController {
     const token = this.extractToken(req);
     const l = limit ? parseInt(limit, 10) : 10;
     const o = offset ? parseInt(offset, 10) : 0;
-    const result = await this.inquilinosService.findAll(token, l, o);
-
-    if (req.user.rol === 'delegado') {
-      const scoped: any[] = [];
-      for (const inq of result.data) {
-        if (await this.authzService.canReadInquilino(req.user, inq.id)) {
-          scoped.push(inq);
-        }
-      }
-      return {
-        data: scoped,
-        total: scoped.length,
-        limit: l,
-        offset: o,
-      };
-    }
-
-    return result;
+    // Database RLS enforces membership and permissions; the service scopes
+    // pagination to the current gestor workspace before applying LIMIT.
+    return this.inquilinosService.findAll(token, req.user.workspace_id, l, o);
   }
 
   @Get(':id')
