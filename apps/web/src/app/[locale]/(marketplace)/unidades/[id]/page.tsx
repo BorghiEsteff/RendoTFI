@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { WhatsAppButton } from '@/components/marketplace/WhatsAppButton';
 import { TrackUnidadView } from '@/components/marketplace/TrackUnidadView';
+import { DisponibilidadPublica } from '@/components/marketplace/DisponibilidadPublica';
 import { FavoritoButton } from '@/components/marketplace/FavoritoButton';
 import { ReporteModal } from '@/components/marketplace/ReporteModal';
 import { Badge } from '@/components/ui/badge';
@@ -362,6 +363,8 @@ export default async function UnidadDetailPage({
 
             {/* Aceternity Animated Tabs */}
             <AnimatedTabs tabs={detailTabs} defaultValue="descripcion" />
+
+            <DisponibilidadPublica unidadId={id} locale={locale} />
 
             <hr className="border-border/60" />
 
