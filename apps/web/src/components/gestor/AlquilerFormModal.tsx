@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { addDays, addMonths, format, isBefore, startOfDay } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { getClientAuthToken } from '@/lib/supabase/client-token';
+import { DisponibilidadAlquilerPreview } from './DisponibilidadAlquilerPreview';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1018,6 +1019,15 @@ export function AlquilerFormModal({
                   />
                 </div>
               </div>
+              <DisponibilidadAlquilerPreview
+                unidadId={watchedUnidadId}
+                modalidad={watchedModalidad}
+                inicio={watchedFechaInicio}
+                fin={watchedFechaFin}
+                horaInicio={watchedHoraInicio}
+                horaFin={watchedHoraFin}
+                token={token}
+              />
             </div>
 
             </div>
