@@ -422,6 +422,9 @@ export class AlquileresService {
       .select()
       .single();
 
+    if (error?.code === '23P01') {
+      throw new ConflictException('Ese período ya fue reservado para la unidad. Elegí otra fecha u horario.');
+    }
     if (error || !data) {
       throw new UnprocessableEntityException(error?.message || 'Error al crear alquiler');
     }
@@ -637,6 +640,9 @@ export class AlquileresService {
       .select()
       .single();
 
+    if (error?.code === '23P01') {
+      throw new ConflictException('El período seleccionado ya está ocupado. No se modificó el alquiler.');
+    }
     if (error) {
       throw new UnprocessableEntityException(error.message);
     }
