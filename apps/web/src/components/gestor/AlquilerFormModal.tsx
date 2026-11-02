@@ -175,7 +175,7 @@ export function AlquilerFormModal({
       for (const tenant of incoming) {
         if (tenant.id) byId.set(tenant.id, tenant);
       }
-      return [...byId.values()];
+      return Array.from(byId.values());
     });
   }, []);
   const [gruposList, setGruposList] = useState<GrupoOption[]>(grupos);
