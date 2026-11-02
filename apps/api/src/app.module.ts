@@ -12,6 +12,7 @@ import { ReportesModule } from './reportes/reportes.module.js';
 import { GruposModule } from './grupos/grupos.module.js';
 import { InquilinosModule } from './inquilinos/inquilinos.module.js';
 import { AlquileresModule } from './alquileres/alquileres.module.js';
+import { CobranzasModule } from './cobranzas/cobranzas.module.js';
 import { DelegadosModule } from './delegados/delegados.module.js';
 import { TraduccionService } from './common/services/traduccion/traduccion.service.js';
 import { PagosModule } from './pagos/pagos.module.js';
@@ -34,6 +35,7 @@ import { AuthorizationModule } from './authorization/authorization.module.js';
     GruposModule,
     InquilinosModule,
     AlquileresModule,
+    CobranzasModule,
     DelegadosModule,
     PagosModule,
     MetricasModule,
