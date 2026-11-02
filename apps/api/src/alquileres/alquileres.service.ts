@@ -331,6 +331,55 @@ export class AlquileresService {
 
     const estadoPago = createAlquilerDto.estado_pago || 'pendiente';
     const montoDeposito = Number(createAlquilerDto.monto_deposito || 0);
+    if (!Number.isFinite(montoDeposito) || montoDeposito < 0) {
+      throw new BadRequestException('El depósito debe ser un importe válido y no negativo');
+    }
+    if (createAlquilerDto.deposito_recibido && montoDeposito <= 0) {
+      throw new BadRequestException('No se puede indicar un depósito cobrado sin importe pactado');
+    }
+    if (estadoPago === 'seña_cobrada' && senaResolved.montoSena <= 0) {
+      throw new BadRequestException('No se puede marcar seña cobrada si el contrato no tiene seña');
+    }
+
+    const detalle = createAlquilerDto.detalle_precio;
+    if (detalle) {
+      const cantidad = Number(detalle.cantidad);
+      const tarifa = Number(detalle.tarifa_base);
+      const cargos = Number(detalle.cargos_extra);
+      const descuento = Number(detalle.descuento);
+      const calculado = Number(detalle.importe_calculado);
+      if (detalle.modalidad !== modalidad ||
+          ![cantidad, tarifa, cargos, descuento, calculado].every(Number.isFinite) ||
+          cantidad <= 0 || tarifa < 0 || cargos < 0 || descuento < 0 || calculado <= 0 ||
+          !['automatico', 'manual'].includes(detalle.origen)) {
+        throw new BadRequestException('Desglose de precio inválido para la modalidad seleccionada');
+      }
+      if (descuento >= (cantidad * tarifa + cargos) && detalle.origen === 'automatico') {
+        throw new BadRequestException('El descuento no puede consumir el precio total');
+      }
+      const expected = Math.round((cantidad * tarifa + cargos - descuento) * 100) / 100;
+      if (detalle.origen === 'automatico' &&
+          (Math.abs(expected - montoTotal) > 0.01 || Math.abs(calculado - montoTotal) > 0.01)) {
+        throw new BadRequestException('El total contratado no coincide con el desglose calculado');
+      }
+      if (detalle.origen === 'manual' && Math.abs(calculado - montoTotal) > 0.01) {
+        throw new BadRequestException('El total manual no coincide con el importe registrado');
+      }
+      if (modalidad === 'mensual') {
+        const vencimiento = Number(detalle.dia_vencimiento);
+        const ajuste = Number(detalle.ajuste_porcentaje || 0);
+        const frecuencia = Number(detalle.ajuste_cada_meses || 12);
+        if (!Number.isInteger(vencimiento) || vencimiento < 1 || vencimiento > 31 ||
+            !Number.isFinite(ajuste) || ajuste < 0 || ajuste > 100 ||
+            !Number.isInteger(frecuencia) || frecuencia < 1 || frecuencia > 60) {
+          throw new BadRequestException('Vencimiento o ajuste mensual inválido');
+        }
+      } else if (detalle.dia_vencimiento !== undefined ||
+                 detalle.ajuste_porcentaje !== undefined ||
+                 detalle.ajuste_cada_meses !== undefined) {
+        throw new BadRequestException('Los vencimientos periódicos solo corresponden al alquiler mensual');
+      }
+    }
     let montoCobrado = Number(createAlquilerDto.monto_cobrado !== undefined ? createAlquilerDto.monto_cobrado : 0);
 
     if (createAlquilerDto.monto_cobrado === undefined) {
@@ -362,6 +411,8 @@ export class AlquileresService {
           sena_origen_grupo_id: senaResolved.senaOrigenGrupoId,
           monto_sena: senaResolved.montoSena,
           monto_deposito: montoDeposito,
+          deposito_recibido: createAlquilerDto.deposito_recibido === true,
+          detalle_precio: detalle ?? null,
           estado_pago: estadoPago,
           monto_cobrado: montoCobrado,
           observaciones: createAlquilerDto.observaciones,
