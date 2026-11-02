@@ -21,6 +21,10 @@ Este proyecto fue desarrollado como Trabajo Final Integrador (TFI).
 - **Integración con MercadoPago:** Pasarela de pago completa con procesamiento de webhooks para la habilitación automática de cupos y publicación de unidades.
 - **Testing E2E Autónomo:** Suite de pruebas end-to-end estructurada en Playwright para garantizar la estabilidad de los flujos críticos.
 
+## 🧾 Cobros y deudas (Beta)
+
+El panel incorpora una cuenta corriente por alquiler: emisión explícita de cuotas, vencimientos, cobros parciales, saldos, asientos de apertura heredados y anulación auditada. Separado de la facturación de cupos y depósitos. Documentación: [`009-cobranzas-cuotas-deudas`](specs/009-cobranzas-cuotas-deudas/spec.md), [`SDD/TDD`](docs/architecture/REN-COB-01-sdd-tdd-spec.md) y [`ADR`](docs/architecture/ADR-REN-COB-01-contractual-ledger.md). La beta todavía requiere pruebas E2E reales antes de la aceptación funcional.
+
 ## 🛠 Stack Tecnológico
 
 El proyecto es un monorepo gestionado con [Turborepo](https://turbo.build/) y pnpm, dividido en frontend (web) y backend (api).
