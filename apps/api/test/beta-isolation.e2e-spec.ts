@@ -410,6 +410,7 @@ describe('B007a: Aislamiento API Real y Autorización Multi-Tenant (T005 / T001)
         gestor_id: gestorAId,
         nombre_completo: `Inquilino Gestor A ${timestamp}`,
         email: `inquilino-a-${timestamp}@local.test`,
+        documento: String(timestamp).slice(-9),
       })
       .select('id')
       .single();
@@ -422,6 +423,7 @@ describe('B007a: Aislamiento API Real y Autorización Multi-Tenant (T005 / T001)
         gestor_id: gestorBId,
         nombre_completo: `Inquilino Gestor B ${timestamp}`,
         email: `inquilino-b-${timestamp}@local.test`,
+        documento: String(timestamp + 1).slice(-9),
       })
       .select('id')
       .single();
