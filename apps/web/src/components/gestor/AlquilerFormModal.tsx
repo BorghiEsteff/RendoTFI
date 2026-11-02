@@ -1499,6 +1499,47 @@ export function AlquilerFormModal({
               </div>
             </div>
 
+            </div>
+            <div className={wizardStep === 3 ? 'space-y-4' : 'hidden'} data-testid="alquiler-wizard-confirmacion">
+              <section className="space-y-3 rounded-2xl border border-border bg-muted/10 p-4 sm:p-5">
+                <h3 className="text-lg font-bold">Revisá antes de confirmar</h3>
+                <p className="text-xs text-muted-foreground">
+                  El alquiler solo se registrará cuando confirmes los datos de esta pantalla.
+                </p>
+                <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div><dt className="text-xs text-muted-foreground">Modalidad</dt>
+                    <dd className="font-semibold">{watchedModalidad === 'por_hora' ? 'Por hora' :
+                      watchedModalidad === 'diaria' ? 'Por día' : 'Mensual'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Unidad</dt>
+                    <dd className="font-semibold">{selectedUnidad?.titulo_es || 'Sin unidad'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Inquilino</dt>
+                    <dd className="font-semibold">{inquilinosList.find((i) => i.id === form.watch('inquilino_id'))?.nombre_completo || 'Sin inquilino'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Período</dt>
+                    <dd className="font-semibold">{format(watchedFechaInicio, 'dd/MM/yyyy')}
+                      {watchedModalidad === 'por_hora'
+                        ? ' · ' + watchedHoraInicio + ' a ' + watchedHoraFin
+                        : ' al ' + format(watchedFechaFin, 'dd/MM/yyyy')}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Duración</dt>
+                    <dd className="font-semibold">{quantity.toLocaleString('es-AR', { maximumFractionDigits: 2 })}{' '}
+                      {watchedModalidad === 'por_hora' ? 'horas' : watchedModalidad === 'diaria' ? 'noches' : 'meses contractuales'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Total contratado</dt>
+                    <dd className="text-xl font-bold">{amountCurrency(watchedTotal)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Cobrado del alquiler</dt>
+                    <dd className="font-semibold">{amountCurrency(cobradoInicial)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Saldo del alquiler</dt>
+                    <dd className="font-semibold">{amountCurrency(saldoPendiente)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Depósito pactado</dt>
+                    <dd className="font-semibold">{amountCurrency(watchedDeposito)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Garantía recibida</dt>
+                    <dd className="font-semibold">{amountCurrency(fondosCustodia)}</dd></div>
+                </dl>
+                {watchedModalidad === 'mensual' && <p className="rounded-lg bg-background p-3 text-xs text-muted-foreground">
+                  Vencimiento: día {watchedVencimiento}. Ajuste pactado: {watchedAjuste}% cada {form.watch('ajuste_cada_meses')} meses.
+                  No se programan cobros automáticos.
+                </p>}
+              </section>
+            </div>
+
             <div data-testid="contrato-upload-after-save" className="rounded-xl border border-border/80 bg-muted/10 p-3.5 space-y-1">
               <span className="flex items-center gap-1.5 text-xs font-semibold">
                 <FileText className="h-3.5 w-3.5 text-primary" /> Contrato digital (opcional)
@@ -1514,18 +1555,25 @@ export function AlquilerFormModal({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => handleOpenChange(false)}
+                onClick={() => {
+                  if (wizardStep > 1) {
+                    setWizardStep(wizardStep === 3 ? 2 : 1);
+                    setWizardError(null);
+                    setAttemptedAdvance(false);
+                  } else handleOpenChange(false);
+                }}
                 className="w-full sm:w-auto min-h-[44px]"
               >
-                Cancelar
+                {wizardStep === 1 ? 'Cancelar' : 'Volver'}
               </Button>
               <Button
-                type="submit"
+                type={wizardStep === 3 ? 'submit' : 'button'}
+                onClick={wizardStep === 3 ? undefined : goForward}
                 data-testid="btn-guardar-alquiler"
-                disabled={isSubmitting || !hasUnidades || !hasInquilinos}
+                disabled={isSubmitting}
                 className="w-full sm:w-auto min-h-[44px]"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar Alquiler'}
+                {isSubmitting ? 'Guardando...' : wizardStep === 3 ? 'Confirmar y guardar alquiler' : 'Continuar'}
               </Button>
             </div>
           </form>
