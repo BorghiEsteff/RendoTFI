@@ -47,6 +47,9 @@ jobs:
       - name: Web TypeScript
         working-directory: apps/web
         run: node node_modules/typescript/bin/tsc --noEmit --pretty false
+      - name: Verify WhatsApp unit title interpolation in all locales
+        working-directory: apps/web
+        run: node --test tests/whatsapp-title-interpolation.test.mjs
       - name: Validate three localized notices
         run: |
           node --input-type=module -e '

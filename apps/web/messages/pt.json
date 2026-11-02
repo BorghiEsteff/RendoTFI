@@ -309,7 +309,7 @@
     "directContactDisclaimer": "Ao entrar em contato, você falará diretamente com o Gestor Imobiliário responsável sem intermediários.",
     "noPhotos": "Sem fotos disponíveis",
     "consultPrice": "Consultar preço",
-    "whatsappMessage": "Olá, tenho interesse na unidade '{titulo}' que vi anunciada no Rendo.",
+    "whatsappMessage": "Olá, tenho interesse na unidade “{titulo}” que vi anunciada no Rendo.",
     "exactAddressLabel": "Endereço",
     "noExactAddress": "Nenhum endereço cadastrado",
     "priceUnavailable": "Preço indisponível",

@@ -309,7 +309,7 @@
     "directContactDisclaimer": "When contacting, you will speak directly with the designated Property Manager without intermediaries.",
     "noPhotos": "No photos available",
     "consultPrice": "Inquire for price",
-    "whatsappMessage": "Hello, I am interested in the unit '{titulo}' I saw listed on Rendo.",
+    "whatsappMessage": "Hello, I am interested in the unit “{titulo}” I saw listed on Rendo.",
     "exactAddressLabel": "Address",
     "noExactAddress": "No street address recorded",
     "priceUnavailable": "Price unavailable",
