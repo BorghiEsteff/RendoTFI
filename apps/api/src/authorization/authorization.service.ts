@@ -358,84 +358,49 @@ export class AuthorizationService {
 
   async canReadInquilino(actor: AuthenticatedUser, inquilinoId: string): Promise<boolean> {
     const client = this.supabaseService.getAdminClient();
-    const { data: inq } = await client
+    const { data: inq, error } = await client
       .from('inquilinos')
-      .select('id, gestor_id, creado_por, deleted_at')
+      .select('id, gestor_id, deleted_at')
       .eq('id', inquilinoId)
       .single();
 
-    if (!inq || inq.deleted_at) {
-      return false;
-    }
-
+    if (error || !inq) return false;
     if (actor.rol === 'gestor') {
-      return inq.gestor_id === actor.id;
+      return inq.gestor_id === actor.id && !inq.deleted_at;
     }
+    if (inq.gestor_id !== actor.workspace_id) return false;
+    const delegation = await this.getActiveDelegation(actor.id, actor.workspace_id);
+    if (!delegation || delegation.estado !== 'activa' ||
+        !['ver', 'gestionar'].includes(delegation.permiso)) return false;
 
-    if (inq.gestor_id !== actor.workspace_id) {
-      return false;
-    }
+    if (!inq.deleted_at) return true;
 
-    // A newly created orphan tenant is readable only by its creator
-    // while the delegate still has an active Gestionar permission.
-    const { data: alqs } = await client
+    // Archived identities can appear in rental history only within the
+    // delegate's permitted unit scope, never in the active tenant directory.
+    const { data: rentals, error: rentalError } = await client
       .from('alquileres')
-      .select('id, unidad_id')
+      .select('unidad_id')
       .eq('inquilino_id', inquilinoId)
       .is('deleted_at', null);
-
-    if (!alqs || alqs.length === 0) {
-      if (inq.creado_por !== actor.id) return false;
-      const delegation = await this.getActiveDelegation(actor.id, actor.workspace_id);
-      return delegation?.estado === 'activa' && delegation.permiso === 'gestionar';
+    if (rentalError || !rentals) return false;
+    for (const rental of rentals) {
+      if (await this.canReadUnidad(actor, rental.unidad_id)) return true;
     }
-
-    for (const alq of alqs) {
-      if (await this.canReadUnidad(actor, alq.unidad_id)) {
-        return true;
-      }
-    }
-
     return false;
   }
 
   async canManageInquilino(actor: AuthenticatedUser, inquilinoId: string): Promise<boolean> {
-    if (actor.rol === 'gestor') {
-      return this.canReadInquilino(actor, inquilinoId);
-    }
-
-    const delegation = await this.getActiveDelegation(actor.id, actor.workspace_id);
-    if (!delegation || delegation.estado !== 'activa' || delegation.permiso !== 'gestionar') {
-      return false;
-    }
-
     const client = this.supabaseService.getAdminClient();
-    const { data: inq } = await client
+    const { data: inq, error } = await client
       .from('inquilinos')
-      .select('id, gestor_id, creado_por, deleted_at')
+      .select('id, gestor_id, deleted_at')
       .eq('id', inquilinoId)
       .single();
+    if (error || !inq || inq.deleted_at) return false;
+    if (actor.rol === 'gestor') return inq.gestor_id === actor.id;
+    if (inq.gestor_id !== actor.workspace_id) return false;
 
-    if (!inq || inq.deleted_at || inq.gestor_id !== actor.workspace_id) {
-      return false;
-    }
-
-    const { data: alqs } = await client
-      .from('alquileres')
-      .select('id, unidad_id')
-      .eq('inquilino_id', inquilinoId)
-      .is('deleted_at', null);
-
-    if (!alqs || alqs.length === 0) {
-      return inq.creado_por === actor.id;
-    }
-
-    for (const alq of alqs) {
-      if (await this.canManageUnidad(actor, alq.unidad_id)) {
-        return true;
-      }
-    }
-
-    return false;
+    const delegation = await this.getActiveDelegation(actor.id, actor.workspace_id);
+    return delegation?.estado === 'activa' && delegation.permiso === 'gestionar';
   }
 }
