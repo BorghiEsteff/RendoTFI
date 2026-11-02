@@ -2,7 +2,7 @@ import {
   BadRequestException, Body, Controller, Get, Param, Post, Query,
   Request, UseGuards, ForbiddenException,
 } from '@nestjs/common';
-import { IsIn, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { AuthenticatedRequest } from '../auth/supabase-auth.guard.js';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard.js';
@@ -61,7 +61,7 @@ export class CobranzasController {
         !Number.isSafeInteger(offset) || offset < 0) {
       throw new BadRequestException('Paginación inválida');
     }
-    if (alquilerId && !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/.test(alquilerId)) {
+    if (alquilerId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(alquilerId)) {
       throw new BadRequestException('ID de alquiler inválido');
     }
     return this.cobranzas.findAll(this.token(req), limit, offset, alquilerId);
