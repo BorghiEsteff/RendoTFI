@@ -23,7 +23,7 @@ const formSchema = z.object({
   nombre_completo: z.string().min(2, 'El nombre es obligatorio'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   telefono: z.string().optional().or(z.literal('')),
-  documento: z.string().optional().or(z.literal('')),
+  documento: z.string().trim().regex(/^\s*(?:\d[\s.-]*){7,9}$/, 'Ingresá un DNI válido de 7 a 9 dígitos'),
   documento_identidad: z.string().optional().or(z.literal('')),
 });
 
@@ -108,14 +108,14 @@ export function InquilinoFormModal({ token, onCreated, trigger }: InquilinoFormM
     setIsSubmitting(true);
 
     try {
-      const doc = pendingFormData.documento || pendingFormData.documento_identidad;
+      const doc = pendingFormData.documento.replace(/\D/g, '');
       const validGarantes = garantes.filter((g) => g.nombre_completo.trim().length > 0);
 
       const payload = {
         nombre_completo: pendingFormData.nombre_completo,
         ...(pendingFormData.email ? { email: pendingFormData.email } : {}),
         ...(pendingFormData.telefono ? { telefono: pendingFormData.telefono } : {}),
-        ...(doc ? { documento: doc, documento_identidad: doc } : {}),
+        documento: doc,
         garantes: validGarantes,
         consentimiento_ley25326: true,
         consentimiento_fecha: new Date().toISOString(),
@@ -213,12 +213,26 @@ export function InquilinoFormModal({ token, onCreated, trigger }: InquilinoFormM
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="documento">DNI / Documento</Label>
+                  <Label htmlFor="documento">DNI del inquilino *</Label>
                   <Input
                     id="documento"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    required
+                    aria-invalid={!!form.formState.errors.documento}
+                    aria-describedby={form.formState.errors.documento ? 'inquilino-dni-error' : 'inquilino-dni-hint'}
                     {...form.register('documento')}
                     placeholder="Ej. 34.567.890"
                   />
+                  {form.formState.errors.documento ? (
+                    <span id="inquilino-dni-error" role="alert" className="text-xs text-destructive">
+                      {form.formState.errors.documento.message}
+                    </span>
+                  ) : (
+                    <span id="inquilino-dni-hint" className="text-xs text-muted-foreground">
+                      Obligatorio y único en Rendo. Se acepta con o sin puntos.
+                    </span>
+                  )}
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="telefono">Teléfono</Label>
