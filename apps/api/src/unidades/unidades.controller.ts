@@ -25,6 +25,8 @@ import { CreateModalidadPrecioDto } from './dto/create-modalidad-precio.dto.js';
 import { UpdateModalidadPrecioDto } from './dto/update-modalidad-precio.dto.js';
 import { AuthorizationService } from '../authorization/authorization.service.js';
 import { ActionLogService } from '../authorization/action-log.service.js';
+import { SupabaseService } from '../supabase/supabase.service.js';
+import { obtenerDisponibilidad } from '../common/disponibilidad.js';
 
 @UseGuards(SupabaseAuthGuard)
 @Controller('unidades')
@@ -33,6 +35,7 @@ export class UnidadesController {
     private readonly unidadesService: UnidadesService,
     private readonly authzService: AuthorizationService,
     private readonly actionLogService: ActionLogService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   @Post()
@@ -95,6 +98,19 @@ export class UnidadesController {
 
     const token = this.extractToken(req);
     return this.unidadesService.findAll(query, token, req.user.workspace_id);
+  }
+
+  @Get(':id/disponibilidad')
+  async disponibilidad(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    if (!await this.authzService.canReadUnidad(req.user, id)) {
+      throw new NotFoundException('Unidad no encontrada o fuera del alcance del delegado');
+    }
+    return obtenerDisponibilidad(this.supabaseService, id, desde, hasta, this.extractToken(req));
   }
 
   @Get(':id')
