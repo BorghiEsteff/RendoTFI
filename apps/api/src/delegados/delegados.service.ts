@@ -128,11 +128,15 @@ export class DelegadosService {
     const client = this.supabase.getAdminClient();
 
     // 1. Fetch invitations
-    const { data: invs } = await client
+    const { data: invs, error: invitationsError } = await client
       .from('invitaciones_delegados')
-      .select('*, target:users!delegado_id(id, full_name, email)')
+      .select('*, target:users!delegado_id(id, full_name)')
       .eq('gestor_id', gestorUser.id)
       .order('created_at', { ascending: false });
+
+    if (invitationsError) {
+      throw new InternalServerErrorException('No se pudieron consultar las invitaciones enviadas');
+    }
 
     const invitaciones: DelegadoInvitation[] = (invs || []).map((i: any) => {
       const email = i.email_snapshot || i.email || '';
@@ -153,20 +157,25 @@ export class DelegadosService {
     });
 
     // 2. Fetch delegaciones
-    const { data: dels } = await client
+    const { data: dels, error: delegationsError } = await client
       .from('delegaciones')
       .select(`
         *,
-        delegado:users!delegado_id(id, full_name, email),
+        delegado:users!delegado_id(id, full_name),
         grupo:grupos(id, nombre)
       `)
       .eq('gestor_id', gestorUser.id)
       .neq('estado', 'revocada')
       .order('created_at', { ascending: false });
 
+    if (delegationsError) {
+      throw new InternalServerErrorException('No se pudieron consultar los delegados');
+    }
+
     const delegaciones: DelegationSummary[] = [];
     for (const d of dels || []) {
-      const email = d.delegado?.email || '';
+      const relatedInvitation = (invs || []).find((i: any) => i.id === d.invitacion_id);
+      const email = relatedInvitation?.email_snapshot || '';
       const summary: DelegationSummary = {
         id: d.id,
         delegado: {
@@ -202,12 +211,16 @@ export class DelegadosService {
     delegadoUser: AuthenticatedUser,
   ): Promise<ReceivedInvitation[]> {
     const client = this.supabase.getAdminClient();
-    const { data: invs } = await client
+    const { data: invs, error: invitationsError } = await client
       .from('invitaciones_delegados')
-      .select('*, gestor:users!gestor_id(id, full_name, email)')
+      .select('*, gestor:users!gestor_id(id, full_name)')
       .eq('delegado_id', delegadoUser.id)
       .eq('estado', 'pendiente')
       .order('created_at', { ascending: false });
+
+    if (invitationsError) {
+      throw new InternalServerErrorException('No se pudieron consultar las invitaciones recibidas');
+    }
 
     const now = new Date();
     return (invs || []).map((i: any) => {
@@ -344,7 +357,7 @@ export class DelegadosService {
       .from('delegaciones')
       .select(`
         *,
-        delegado:users!delegado_id(id, full_name, email),
+        delegado:users!delegado_id(id, full_name),
         grupo:grupos(id, nombre)
       `)
       .eq('id', delegationId)
@@ -367,7 +380,9 @@ export class DelegadosService {
       }));
     }
 
-    const email = updated.delegado?.email || '';
+    // The canonical users profile has no email column. The list endpoint
+    // resolves masked emails from the invitation snapshot on refresh.
+    const email = '';
     return {
       id: updated.id,
       delegado: {

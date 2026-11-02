@@ -29,15 +29,17 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
     try {
       const token = await getDelegationAccessToken();
       if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
-      const search = typeof window !== 'undefined' ? window.location.search : '';
-      const res = await fetch(`/api/delegados/invitaciones/recibidas${search}`, {
+      const res = await fetch('/api/delegados/invitaciones/recibidas', {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000),
       });
       if (!res.ok) {
-        throw new Error('Error al cargar las invitaciones');
+        throw new Error('No pudimos consultar las invitaciones. Reintenta o vuelve a iniciar sesión.');
       }
-      const data = await res.json();
-      setInvitations(data);
+      const data: unknown = await res.json();
+      if (!Array.isArray(data)) throw new Error('El servidor devolvió una lista de invitaciones inválida');
+      setInvitations(data as ReceivedInvitation[]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudieron cargar las invitaciones';
       setError(msg);
@@ -150,6 +152,10 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
         <p className="text-xs text-[#667085] dark:text-[#AEB7C7] mt-1 max-w-sm mx-auto">
           Cuando un Gestor inmobiliario te invite a colaborar como Delegado en su espacio de trabajo, aparecerá aquí.
         </p>
+        <button type="button" onClick={() => void fetchInvitations()} data-testid="btn-refrescar-invitaciones"
+          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold text-foreground hover:bg-muted">
+          Actualizar invitaciones
+        </button>
       </div>
     );
   }
