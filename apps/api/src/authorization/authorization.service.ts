@@ -360,7 +360,7 @@ export class AuthorizationService {
     const client = this.supabaseService.getAdminClient();
     const { data: inq } = await client
       .from('inquilinos')
-      .select('id, gestor_id, deleted_at')
+      .select('id, gestor_id, creado_por, deleted_at')
       .eq('id', inquilinoId)
       .single();
 
@@ -376,7 +376,8 @@ export class AuthorizationService {
       return false;
     }
 
-    // Delegado can read only if linked to an active Alquiler in their readable scope
+    // A newly created orphan tenant is readable only by its creator
+    // while the delegate still has an active Gestionar permission.
     const { data: alqs } = await client
       .from('alquileres')
       .select('id, unidad_id')
@@ -384,7 +385,9 @@ export class AuthorizationService {
       .is('deleted_at', null);
 
     if (!alqs || alqs.length === 0) {
-      return false;
+      if (inq.creado_por !== actor.id) return false;
+      const delegation = await this.getActiveDelegation(actor.id, actor.workspace_id);
+      return delegation?.estado === 'activa' && delegation.permiso === 'gestionar';
     }
 
     for (const alq of alqs) {
@@ -407,6 +410,16 @@ export class AuthorizationService {
     }
 
     const client = this.supabaseService.getAdminClient();
+    const { data: inq } = await client
+      .from('inquilinos')
+      .select('id, gestor_id, creado_por, deleted_at')
+      .eq('id', inquilinoId)
+      .single();
+
+    if (!inq || inq.deleted_at || inq.gestor_id !== actor.workspace_id) {
+      return false;
+    }
+
     const { data: alqs } = await client
       .from('alquileres')
       .select('id, unidad_id')
@@ -414,7 +427,7 @@ export class AuthorizationService {
       .is('deleted_at', null);
 
     if (!alqs || alqs.length === 0) {
-      return false;
+      return inq.creado_por === actor.id;
     }
 
     for (const alq of alqs) {
