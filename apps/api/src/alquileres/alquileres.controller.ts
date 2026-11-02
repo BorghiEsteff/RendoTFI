@@ -11,6 +11,7 @@ import {
   Request,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { AlquileresService } from './alquileres.service.js';
 import { CreateAlquilerDto } from './dto/create-alquiler.dto.js';
@@ -19,6 +20,7 @@ import { SupabaseAuthGuard } from '../auth/supabase-auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/supabase-auth.guard.js';
 import { AuthorizationService } from '../authorization/authorization.service.js';
 import { ActionLogService } from '../authorization/action-log.service.js';
+import { getBuenosAiresCalendarDate } from '@tfi/types';
 
 @UseGuards(SupabaseAuthGuard)
 @Controller('alquileres')
@@ -34,6 +36,21 @@ export class AlquileresController {
     @Body() createAlquilerDto: CreateAlquilerDto,
     @Request() req: AuthenticatedRequest,
   ) {
+    // Enforce the current Argentina calendar day on the server. Editing an
+    // existing historical rental is intentionally not affected by this rule.
+    const submittedStart = createAlquilerDto.inicio_at
+      ? new Date(createAlquilerDto.inicio_at)
+      : createAlquilerDto.fecha_inicio
+        ? new Date(createAlquilerDto.fecha_inicio)
+        : null;
+    if (submittedStart && !Number.isNaN(submittedStart.getTime())) {
+      const startDay = getBuenosAiresCalendarDate(submittedStart);
+      const today = getBuenosAiresCalendarDate(new Date());
+      if (startDay < today) {
+        throw new BadRequestException('La fecha de inicio no puede ser anterior a hoy');
+      }
+    }
+
     const canManageUnit = await this.authzService.canManageUnidad(
       req.user,
       createAlquilerDto.unidad_id,

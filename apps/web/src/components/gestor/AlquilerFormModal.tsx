@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { addDays, isBefore, startOfDay } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { getClientAuthToken } from '@/lib/supabase/client-token';
 import { Button } from '@/components/ui/button';
@@ -58,15 +59,19 @@ const formSchema = z
     observaciones: z.string().optional(),
   })
   .refine(
+    (data) => !isBefore(startOfDay(data.fecha_inicio), startOfDay(new Date())),
+    {
+      message: 'La fecha de inicio no puede ser anterior a hoy',
+      path: ['fecha_inicio'],
+    },
+  )
+  .refine(
     (data) => {
-      if (data.modalidad === 'por_hora') {
-        if (!data.hora_inicio || !data.hora_fin) return false;
-        return true;
-      }
-      return data.fecha_fin >= data.fecha_inicio;
+      if (data.modalidad === 'por_hora') return !!data.hora_inicio && !!data.hora_fin;
+      return isBefore(startOfDay(data.fecha_inicio), startOfDay(data.fecha_fin));
     },
     {
-      message: 'La fecha de fin no puede ser anterior a la de inicio',
+      message: 'La fecha de fin debe ser posterior a la fecha de inicio',
       path: ['fecha_fin'],
     },
   )
@@ -196,6 +201,11 @@ export function AlquilerFormModal({
   }, [confirmDiscard]);
 
   const watchedModalidad = form.watch('modalidad');
+  const watchedFechaInicio = form.watch('fecha_inicio');
+  const minimumStartDate = startOfDay(new Date());
+  const minimumEndDate = watchedModalidad === 'por_hora'
+    ? startOfDay(watchedFechaInicio || minimumStartDate)
+    : addDays(startOfDay(watchedFechaInicio || minimumStartDate), 1);
   const watchedUnidadId = form.watch('unidad_id');
   const watchedTotal = form.watch('monto_total') || 0;
   const watchedSena = form.watch('monto_sena') || 0;
@@ -718,11 +728,20 @@ export function AlquilerFormModal({
               )}
             </div>
 
-            {/* Grilla Responsive de Fechas y Semántica de Modalidad */}
-            <div className="space-y-3 p-3.5 rounded-xl border border-border/80 bg-muted/10">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="fecha_inicio" data-testid="daily-checkin" className="text-xs">
+            {/* Selector de fechas con distribución y tactilidad coherentes con Impeccable */}
+            <div className="space-y-4 rounded-2xl border border-border bg-muted/10 p-4 sm:p-5" data-testid="alquiler-date-range">
+              <div className="space-y-1">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Calendar className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Fechas del alquiler
+                </h3>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  El inicio debe ser hoy o una fecha futura. {watchedModalidad !== 'por_hora' ? 'La finalización debe ser posterior al inicio.' : 'Para turnos por hora, elegí el día y luego el horario.'}
+                </p>
+              </div>
+              <div className={watchedModalidad === 'por_hora' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
+                <div className="grid min-w-0 gap-2">
+                  <Label htmlFor="fecha_inicio" data-testid="daily-checkin" className="text-sm font-medium">
                     {watchedModalidad === 'diaria'
                       ? 'Check-in (Ingreso) *'
                       : watchedModalidad === 'por_hora'
@@ -733,29 +752,56 @@ export function AlquilerFormModal({
                     control={form.control}
                     name="fecha_inicio"
                     render={({ field }) => (
-                      <DatePicker date={field.value} setDate={field.onChange} dateFormat="dd/MM/yyyy" />
+                      <DatePicker
+                        id="fecha_inicio"
+                        label="Elegir fecha de inicio"
+                        date={field.value}
+                        setDate={(next) => {
+                          if (!next) return;
+                          field.onChange(next);
+                          const minEnd = watchedModalidad === 'por_hora' ? next : addDays(next, 1);
+                          if (watchedModalidad === 'por_hora' || isBefore(startOfDay(form.getValues('fecha_fin')), startOfDay(minEnd))) {
+                            form.setValue('fecha_fin', minEnd, { shouldDirty: true, shouldValidate: true });
+                          }
+                        }}
+                        minDate={minimumStartDate}
+                        invalid={!!form.formState.errors.fecha_inicio}
+                        describedBy={form.formState.errors.fecha_inicio ? 'alquiler-fecha-inicio-error' : undefined}
+                        dateFormat="dd/MM/yyyy"
+                      />
                     )}
                   />
                   {form.formState.errors.fecha_inicio && (
-                    <span className="text-xs text-destructive">{form.formState.errors.fecha_inicio.message}</span>
+                    <span id="alquiler-fecha-inicio-error" role="alert" className="text-xs text-destructive">{form.formState.errors.fecha_inicio.message}</span>
                   )}
                 </div>
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="fecha_fin" className="text-xs">
-                    {watchedModalidad === 'diaria' ? 'Check-out (Egreso) *' : 'Fecha Fin *'}
-                  </Label>
-                  <Controller
-                    control={form.control}
-                    name="fecha_fin"
-                    render={({ field }) => (
-                      <DatePicker date={field.value} setDate={field.onChange} dateFormat="dd/MM/yyyy" />
+                {watchedModalidad !== 'por_hora' && (
+                  <div className="grid min-w-0 gap-2">
+                    <Label htmlFor="fecha_fin" className="text-sm font-medium">
+                      {watchedModalidad === 'diaria' ? 'Check-out (Egreso) *' : 'Fecha Fin *'}
+                    </Label>
+                    <Controller
+                      control={form.control}
+                      name="fecha_fin"
+                      render={({ field }) => (
+                        <DatePicker
+                          id="fecha_fin"
+                          label="Elegir fecha de finalización"
+                          date={field.value}
+                          setDate={field.onChange}
+                          minDate={minimumEndDate}
+                          invalid={!!form.formState.errors.fecha_fin}
+                          describedBy={form.formState.errors.fecha_fin ? 'alquiler-fecha-fin-error' : undefined}
+                          dateFormat="dd/MM/yyyy"
+                        />
+                      )}
+                    />
+                    {form.formState.errors.fecha_fin && (
+                      <span id="alquiler-fecha-fin-error" role="alert" className="text-xs text-destructive">{form.formState.errors.fecha_fin.message}</span>
                     )}
-                  />
-                  {form.formState.errors.fecha_fin && (
-                    <span className="text-xs text-destructive">{form.formState.errors.fecha_fin.message}</span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Time Pickers for Hourly Modality */}

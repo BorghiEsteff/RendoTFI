@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { es } from "date-fns/locale";
 
@@ -20,6 +20,10 @@ interface DatePickerProps {
   label?: string;
   disabled?: boolean;
   dateFormat?: string;
+  minDate?: Date;
+  id?: string;
+  invalid?: boolean;
+  describedBy?: string;
 }
 
 export function DatePicker({
@@ -28,35 +32,63 @@ export function DatePicker({
   label = "Elegir fecha",
   disabled,
   dateFormat = "dd/MM/yyyy",
+  minDate,
+  id,
+  invalid,
+  describedBy,
 }: DatePickerProps) {
+  const firstAvailableDay = minDate ? startOfDay(minDate) : undefined;
+
   return (
     <Popover>
       <PopoverTrigger
         render={
           <Button
-            variant={"outline"}
+            type="button"
+            variant="outline"
+            id={id}
+            data-testid={id ? `date-picker-${id}` : undefined}
+            aria-invalid={invalid || undefined}
+            aria-describedby={describedBy}
+            aria-label={date ? `${label}: ${format(date, dateFormat, { locale: es })}` : label}
             disabled={disabled}
             className={cn(
-              "w-full justify-start text-left font-normal text-xs sm:text-sm truncate",
-              !date && "text-muted-foreground"
+              "min-h-11 w-full justify-start gap-2.5 rounded-lg border-input px-3 text-left text-sm font-medium shadow-sm focus-visible:ring-2 focus-visible:ring-primary/50",
+              !date && "text-muted-foreground",
+              invalid && "border-destructive"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            {date ? (
-              <span>{format(date, dateFormat, { locale: es })}</span>
-            ) : (
-              <span>{label}</span>
-            )}
+            <CalendarIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">
+              {date ? format(date, dateFormat, { locale: es }) : label}
+            </span>
           </Button>
         }
       />
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        className="w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-popover p-3 shadow-xl"
+        align="start"
+        sideOffset={8}
+      >
         <Calendar
           mode="single"
           selected={date}
-          onSelect={setDate}
+          defaultMonth={date && (!firstAvailableDay || !isBefore(startOfDay(date), firstAvailableDay)) ? date : firstAvailableDay}
+          startMonth={firstAvailableDay}
+          disabled={firstAvailableDay ? { before: firstAvailableDay } : undefined}
+          onSelect={(next) => {
+            if (!next) return;
+            if (firstAvailableDay && isBefore(startOfDay(next), firstAvailableDay)) return;
+            setDate(next);
+          }}
           locale={es}
+          className="w-full"
         />
+        {firstAvailableDay && (
+          <p className="mt-2 border-t border-border/70 pt-2 text-xs text-muted-foreground">
+            Fechas disponibles desde el {format(firstAvailableDay, "dd/MM/yyyy", { locale: es })}
+          </p>
+        )}
       </PopoverContent>
     </Popover>
   );
