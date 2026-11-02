@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -165,9 +165,19 @@ export function AlquilerFormModal({
   const continueEditingRef = useRef<HTMLButtonElement>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
+  const [tenantCreationFeedback, setTenantCreationFeedback] = useState<string | null>(null);
 
   const [unidadesList, setUnidadesList] = useState<UnidadOption[]>(unidades);
   const [inquilinosList, setInquilinosList] = useState<InquilinoOption[]>(inquilinos);
+  const mergeInquilinos = useCallback((incoming: InquilinoOption[]) => {
+    setInquilinosList((current) => {
+      const byId = new Map(current.map((tenant) => [tenant.id, tenant]));
+      for (const tenant of incoming) {
+        if (tenant.id) byId.set(tenant.id, tenant);
+      }
+      return [...byId.values()];
+    });
+  }, []);
   const [gruposList, setGruposList] = useState<GrupoOption[]>(grupos);
 
   // Estado para el archivo PDF del contrato
@@ -308,7 +318,7 @@ export function AlquilerFormModal({
   // Sincronizar inquilinos si vienen vacíos
   useEffect(() => {
     if (inquilinos.length > 0) {
-      setInquilinosList(inquilinos);
+      mergeInquilinos(inquilinos);
     } else {
       const effectiveToken = getClientAuthToken(token);
       const headers: Record<string, string> = {};
@@ -318,18 +328,19 @@ export function AlquilerFormModal({
         .then((r) => r.json())
         .then((json) => {
           if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-            setInquilinosList(json.data);
+            mergeInquilinos(json.data);
           }
         })
         .catch(() => {});
     }
-  }, [inquilinos, token, form]);
+  }, [inquilinos, token, mergeInquilinos]);
 
   const resetAndClose = () => {
     form.reset();
     setConfirmDiscard(false);
     setSuccessMessage(null);
     setApiErrorMessage(null);
+    setTenantCreationFeedback(null);
     setOpen(false);
   };
 
@@ -718,11 +729,16 @@ export function AlquilerFormModal({
                     </Button>
                   }
                   onCreated={(newInq) => {
-                    setInquilinosList((prev: InquilinoOption[]) => [newInq, ...prev]);
-                    form.setValue('inquilino_id', newInq.id);
+                    mergeInquilinos([newInq]);
+                    form.setValue('inquilino_id', newInq.id, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                    form.clearErrors('inquilino_id');
+                    setTenantCreationFeedback(`${newInq.nombre_completo} registrado y seleccionado. Podés continuar con el alquiler.`);
                   }}
                 />
               </div>
+              {tenantCreationFeedback && (
+                <p data-testid="alquiler-inquilino-creado" role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-foreground">{tenantCreationFeedback}</p>
+              )}
               {form.formState.errors.inquilino_id && (
                 <span id="alquiler-inquilino-error" className="text-xs text-destructive">{form.formState.errors.inquilino_id.message}</span>
               )}
