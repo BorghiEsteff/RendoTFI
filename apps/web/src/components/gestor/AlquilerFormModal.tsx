@@ -1124,14 +1124,30 @@ export function AlquilerFormModal({
                 aria-describedby={form.formState.errors.monto_total ? 'alquiler-monto-error' : undefined}
                 min={0}
                 step="any"
-                {...form.register('monto_total', { valueAsNumber: true })}
+                {...totalRegister}
+                onChange={(event) => {
+                  setManualAmount(true);
+                  totalRegister.onChange(event);
+                }}
                 placeholder="0.00"
                 className="text-xs sm:text-sm font-semibold"
               />
               {form.formState.errors.monto_total && (
                 <span id="alquiler-monto-error" className="text-xs text-destructive">{form.formState.errors.monto_total.message}</span>
               )}
-              <p data-testid="alquiler-monto-ayuda" className="text-xs text-muted-foreground">Ingresá el monto real acordado. No se precarga ningún importe de ejemplo.</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p data-testid="alquiler-monto-ayuda" className="text-xs text-muted-foreground">
+                  {manualAmount
+                    ? 'Total editado manualmente; no se sustituirá por el cálculo sugerido.'
+                    : 'Total calculado con las tarifas y cargos. Podés editarlo si el importe acordado es distinto.'}
+                </p>
+                {manualAmount && <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setManualAmount(false);
+                  form.setValue('monto_total',
+                    rentalAmount(quantity, watchedTarifa, watchedExtras, watchedDescuento),
+                    { shouldDirty: true, shouldValidate: true });
+                }}>Recalcular automáticamente</Button>}
+              </div>
             </div>
 
             {/* Sección de Seña Opcional y Reutilizable */}
@@ -1387,6 +1403,26 @@ export function AlquilerFormModal({
                 </div>
               </div>
 
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border bg-background p-3 text-xs">
+              <input type="checkbox" id="deposito_recibido" className="mt-1 h-4 w-4 accent-primary"
+                checked={watchedGarantiaRecibida}
+                disabled={!watchedDeposito}
+                onChange={(event) => form.setValue('deposito_recibido', event.target.checked, { shouldDirty: true })}/>
+              <span>
+                <strong className="block text-foreground">El depósito en garantía ya fue recibido</strong>
+                <span className="text-muted-foreground">
+                  Dejalo sin marcar si solo se pactó la garantía y todavía no ingresó el dinero.
+                </span>
+              </span>
+            </label>
+            <div className="space-y-1.5">
+              <Label htmlFor="observaciones">Observaciones (opcional)</Label>
+              <textarea id="observaciones" rows={3} maxLength={2000}
+                placeholder="Servicios incluidos, acuerdos y condiciones particulares."
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                {...form.register('observaciones')} />
+            </div>
+
             {/* Selector de Estado del Cobro Inicial */}
             <div className="grid gap-1.5">
               <Label htmlFor="estado_pago" className="text-xs font-semibold flex items-center gap-1.5">
@@ -1420,7 +1456,7 @@ export function AlquilerFormModal({
                   </span>
                 </div>
                 <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                  Sincronización en vivo
+                  Vista previa
                 </span>
               </div>
 
