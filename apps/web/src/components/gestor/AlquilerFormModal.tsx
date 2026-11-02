@@ -212,7 +212,7 @@ export function AlquilerFormModal({
       inquilino_id: '',
       modalidad: 'mensual',
       fecha_inicio: new Date(),
-      fecha_fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      fecha_fin: addMonths(new Date(), 1),
       hora_inicio: '10:00',
       hora_fin: '14:00',
       monto_total: 0, // Solo tarifas reales; no se inventa un precio.
@@ -259,6 +259,11 @@ export function AlquilerFormModal({
   const watchedAjuste = form.watch('ajuste_porcentaje');
   const watchedSena = form.watch('monto_sena') || 0;
   const watchedDeposito = form.watch('monto_deposito') || 0;
+  useEffect(() => {
+    if (watchedDeposito <= 0 && form.getValues('deposito_recibido')) {
+      form.setValue('deposito_recibido', false, { shouldDirty: true });
+    }
+  }, [watchedDeposito, form]);
   const watchedEstadoPago = form.watch('estado_pago');
   const watchedSenaEleccion = form.watch('sena_eleccion');
   const watchedSenaTipo = form.watch('sena_tipo');
@@ -467,7 +472,7 @@ export function AlquilerFormModal({
     const now = new Date();
     if (newMod === 'mensual') {
       form.setValue('fecha_inicio', now);
-      form.setValue('fecha_fin', new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000));
+      form.setValue('fecha_fin', addMonths(now, 1));
     } else if (newMod === 'diaria') {
       form.setValue('fecha_inicio', now);
       form.setValue('fecha_fin', new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000));
@@ -502,7 +507,6 @@ export function AlquilerFormModal({
       let finAtStr: string;
 
       if (data.modalidad === 'por_hora') {
-        const dStr = data.fecha_inicio.toISOString().split('T')[0];
         const hStart = data.hora_inicio || '10:00';
         const hEnd = data.hora_fin || '14:00';
 
