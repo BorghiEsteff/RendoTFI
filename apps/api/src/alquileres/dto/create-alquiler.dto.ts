@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsDate, IsIn, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateAlquilerDto {
   @IsString()
@@ -72,6 +72,25 @@ export class CreateAlquilerDto {
   @Min(0)
   @IsOptional()
   monto_cobrado?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  deposito_recibido?: boolean;
+
+  @IsObject()
+  @IsOptional()
+  detalle_precio?: {
+    modalidad: 'por_hora' | 'diaria' | 'mensual';
+    cantidad: number;
+    tarifa_base: number;
+    cargos_extra: number;
+    descuento: number;
+    importe_calculado: number;
+    origen: 'automatico' | 'manual';
+    dia_vencimiento?: number;
+    ajuste_porcentaje?: number;
+    ajuste_cada_meses?: number;
+  };
 
   @IsString()
   @IsOptional()
