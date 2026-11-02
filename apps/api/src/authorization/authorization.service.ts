@@ -371,7 +371,7 @@ export class AuthorizationService {
     if (inq.gestor_id !== actor.workspace_id) return false;
     const delegation = await this.getActiveDelegation(actor.id, actor.workspace_id);
     if (!delegation || delegation.estado !== 'activa' ||
-        !['ver', 'gestionar'].includes(delegation.permiso)) return false;
+        (delegation.permiso !== 'ver' && delegation.permiso !== 'gestionar')) return false;
 
     if (!inq.deleted_at) return true;
 
