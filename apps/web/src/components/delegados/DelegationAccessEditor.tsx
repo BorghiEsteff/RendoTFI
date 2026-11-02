@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Building, Home, AlertTriangle, Search } from 'lucide-react';
-import { getClientSessionToken } from '@/lib/supabase/client-auth';
+import { getDelegationAccessToken } from '@/lib/delegation-auth';
 
 interface AccessEditorProps {
   delegation: DelegationSummary | null;
@@ -55,18 +55,27 @@ export function DelegationAccessEditor({
   // Load Gestor groups and units for selection
   useEffect(() => {
     if (!open) return;
-    const token = getClientSessionToken();
-    const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-
-    fetch('/api/grupos', { headers })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setGrupos(Array.isArray(data) ? data : []))
-      .catch(() => {});
-
-    fetch('/api/unidades?limit=500', { headers })
-      .then((res) => (res.ok ? res.json() : { data: [] }))
-      .then((data) => setUnidades(data.data || []))
-      .catch(() => {});
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getDelegationAccessToken();
+        if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+        const headers = { Authorization: `Bearer ${token}` };
+        const [gruposResponse, unidadesResponse] = await Promise.all([
+          fetch('/api/grupos', { headers }),
+          fetch('/api/unidades?limit=500', { headers }),
+        ]);
+        if (!gruposResponse.ok || !unidadesResponse.ok) throw new Error('No pudimos cargar los grupos y unidades para asignar permisos.');
+        const [groups, units] = await Promise.all([gruposResponse.json(), unidadesResponse.json()]);
+        if (!cancelled) {
+          setGrupos(Array.isArray(groups) ? groups : []);
+          setUnidades(Array.isArray(units.data) ? units.data : []);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar permisos');
+      }
+    })();
+    return () => { cancelled = true; };
   }, [open]);
 
   if (!delegation) return null;
@@ -95,7 +104,8 @@ export function DelegationAccessEditor({
 
     setLoading(true);
     try {
-      const token = getClientSessionToken();
+      const token = await getDelegationAccessToken();
+      if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       const payload: Record<string, unknown> = {
         permiso,
         alcanceTipo,
@@ -107,7 +117,7 @@ export function DelegationAccessEditor({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });

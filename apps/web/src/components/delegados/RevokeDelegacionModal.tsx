@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { getClientSessionToken } from '@/lib/supabase/client-auth';
+import { getDelegationAccessToken } from '@/lib/delegation-auth';
 
 interface RevokeDelegacionModalProps {
   open: boolean;
@@ -61,10 +61,11 @@ export function RevokeDelegacionModal({
     setSuccess(false);
 
     try {
-      const token = getClientSessionToken();
+      const token = await getDelegationAccessToken();
+      if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       const res = await fetch(`/api/delegados/${delegacionId}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {

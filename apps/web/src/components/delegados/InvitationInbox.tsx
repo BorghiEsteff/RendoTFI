@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { ReceivedInvitation } from '@tfi/types';
-import { getClientSessionToken } from '@/lib/supabase/client-auth';
+import { getDelegationAccessToken } from '@/lib/delegation-auth';
+import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Mail, Check, X, AlertCircle, Clock, Building2 } from 'lucide-react';
 
@@ -12,6 +13,9 @@ interface InvitationInboxProps {
 
 export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const [accepted, setAccepted] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [invitations, setInvitations] = useState<ReceivedInvitation[]>(
     initialInvitations || [],
   );
@@ -23,10 +27,11 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
     setLoading(true);
     setError(null);
     try {
-      const token = getClientSessionToken();
+      const token = await getDelegationAccessToken();
+      if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       const search = typeof window !== 'undefined' ? window.location.search : '';
       const res = await fetch(`/api/delegados/invitaciones/recibidas${search}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         throw new Error('Error al cargar las invitaciones');
@@ -49,34 +54,37 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
 
   const handleAccept = async (id: string) => {
     setProcessingId(id);
+    setActionError(null);
     try {
-      const token = getClientSessionToken();
+      const token = await getDelegationAccessToken();
+      if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       const res = await fetch(`/api/delegados/invitaciones/${id}/aceptar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.message || 'No se pudo aceptar la invitación');
       }
-      // Redirect to gestor dashboard where pending configuration is displayed
-      router.push('/dashboard');
+      setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+      setAccepted(true);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al aceptar la invitación';
-      alert(msg);
-      setProcessingId(null);
+      setActionError(msg);
     }
   };
 
   const handleReject = async (id: string) => {
+    setActionError(null);
     if (!confirm('¿Estás seguro de que deseas rechazar esta invitación?')) return;
     setProcessingId(id);
     try {
-      const token = getClientSessionToken();
+      const token = await getDelegationAccessToken();
+      if (!token) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       const res = await fetch(`/api/delegados/invitaciones/${id}/rechazar`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         throw new Error('No se pudo rechazar la invitación');
@@ -84,7 +92,7 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
       setInvitations((prev) => prev.filter((i) => i.id !== id));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al rechazar la invitación';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setProcessingId(null);
     }
@@ -119,7 +127,17 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
     );
   }
 
-  if (invitations.length === 0) {
+  if (accepted && invitations.length === 0) {
+    return (
+      <div role="status" data-testid="invitation-accepted" className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-6 space-y-3">
+        <h3 className="font-semibold">Invitación aceptada</h3>
+        <p className="text-sm">Ya formas parte del equipo. Por seguridad, no tendrás acceso a las unidades hasta que el gestor confirme tus permisos.</p>
+        <a className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-primary-foreground" href={`/${locale}/dashboard`}>Ir a mi panel</a>
+      </div>
+    );
+  }
+
+  if (invitations.length === 0 && !actionError) {
     return (
       <div
         data-testid="empty-invitaciones"
@@ -138,6 +156,8 @@ export function InvitationInbox({ initialInvitations }: InvitationInboxProps) {
 
   return (
     <div data-testid="invitation-inbox" className="space-y-4">
+      {actionError && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">{actionError}</div>}
+      {accepted && <div role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">Invitación aceptada. El gestor debe configurar tus permisos antes de que tengas acceso. <a href={`/${locale}/dashboard`} className="underline">Ir al panel</a>.</div>}
       {invitations.map((inv) => {
         const rawInv = inv as unknown as Record<string, unknown>;
         const expiresAt = inv.expiresAt || (rawInv.expiraEn as string) || Date.now();

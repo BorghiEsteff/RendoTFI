@@ -107,6 +107,17 @@ export default function CuentaPage() {
             <strong className="capitalize">{profile.rol === 'buscador' ? t('searcher') : profile.rol === 'gestor' ? t('manager') : t('delegate')}</strong>
             {profile.rol === 'gestor' && <span className="block mt-1 text-xs text-muted-foreground">{t('betaQuota', { count: profile.cupo_maximo })}</span>}
           </div>
+          <Link
+            data-testid="profile-invitaciones-delegado"
+            href={`/${locale}/cuenta/invitaciones`}
+            className="flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm text-foreground transition-colors hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <span>
+              <strong className="block">Invitaciones de colaboración</strong>
+              <span className="mt-1 block text-xs text-muted-foreground">Consulta y acepta invitaciones para trabajar como delegado de un gestor.</span>
+            </span>
+            <span aria-hidden="true" className="shrink-0 text-primary">→</span>
+          </Link>
           <label className="block text-sm font-medium">{t('fullName')}
             <input type="text" value={fullName} onChange={(event) => setFullName(event.target.value)} required maxLength={120} className="mt-1.5 block w-full min-h-11 rounded-xl border border-border bg-background px-3 text-foreground" />
           </label>

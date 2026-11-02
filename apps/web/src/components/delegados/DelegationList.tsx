@@ -34,6 +34,11 @@ export function DelegationList({
     useState<DelegadoInvitation[]>(initialInvitaciones);
   const [delegaciones, setDelegaciones] =
     useState<DelegationSummary[]>(initialDelegaciones);
+  // Next.js router.refresh() updates SSR props without remounting this client
+  // component. Reflect newly created invitations and configured delegations.
+  React.useEffect(() => setInvitaciones(initialInvitaciones), [initialInvitaciones]);
+  React.useEffect(() => setDelegaciones(initialDelegaciones), [initialDelegaciones]);
+
   const [selectedDelegation, setSelectedDelegation] =
     useState<DelegationSummary | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -342,7 +347,7 @@ export function DelegationList({
                         Expira: {new Date(expiresDate).toLocaleDateString('es-AR')}
                       </span>
                       <span>•</span>
-                      <span className="break-all">Email: {emailChannel}</span>
+                      <span className="break-all">{emailChannel === 'sent' ? 'Email notificado' : 'Notificación interna (sin email)'}</span>
                     </div>
                   </div>
 

@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
-import { getClientAuthToken } from '@/lib/supabase/client-token';
+import { getDelegationAccessToken } from '@/lib/delegation-auth';
 
 interface DelegadoFormModalProps {
   token: string;
@@ -42,7 +42,7 @@ export default function DelegadoFormModal({ token, onSuccess, initialState }: De
     return null;
   });
   const [success, setSuccess] = useState<string | null>(() => {
-    if (initialState === 'FORM-007-success') return 'Invitación enviada con éxito a colaborador@ejemplo.com';
+    if (initialState === 'FORM-007-success') return 'Invitación creada para colaborador@ejemplo.com';
     return null;
   });
   const router = useRouter();
@@ -74,7 +74,8 @@ export default function DelegadoFormModal({ token, onSuccess, initialState }: De
     setLoading(true);
 
     try {
-      const effectiveToken = getClientAuthToken(token);
+      const effectiveToken = (await getDelegationAccessToken()) || token;
+      if (!effectiveToken) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       const res = await fetch('/api/delegados/invitaciones', {
         method: 'POST',
         headers: {
@@ -91,7 +92,7 @@ export default function DelegadoFormModal({ token, onSuccess, initialState }: De
         throw new Error(data.message || 'Error al enviar la invitación');
       }
 
-      setSuccess(`Invitación enviada con éxito a ${trimmedEmail}`);
+      setSuccess(`Invitación creada para ${trimmedEmail}. Debe entrar a Mi cuenta → Invitaciones de colaboración para aceptarla.`);
       setEmail('');
       if (onSuccess) {
         onSuccess();
@@ -123,7 +124,7 @@ export default function DelegadoFormModal({ token, onSuccess, initialState }: De
               Invitar Delegado
             </DialogTitle>
             <p className="text-xs text-[#667085] dark:text-[#AEB7C7]">
-              Ingresa el correo electrónico de una cuenta registrada y verificada en Rendo.
+              Ingresa el correo electrónico de una cuenta registrada y verificada en Rendo. La invitación aparece dentro del perfil del destinatario, sin depender del correo electrónico.
             </p>
           </DialogHeader>
 
@@ -208,7 +209,7 @@ export default function DelegadoFormModal({ token, onSuccess, initialState }: De
               className="bg-[#B89355] text-white hover:bg-[#9F783E] min-h-[44px] min-w-[44px] px-4 py-2 font-semibold shadow-sm"
               render={<button />}
             >
-              {loading ? 'Enviando...' : 'Enviar Invitación'}
+              {loading ? 'Creando...' : 'Crear Invitación'}
             </Button>
           </div>
         </form>

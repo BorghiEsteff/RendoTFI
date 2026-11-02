@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { CreateInquilinoDto } from './dto/create-inquilino.dto.js';
 import { UpdateInquilinoDto } from './dto/update-inquilino.dto.js';
 import { SupabaseService } from '../supabase/supabase.service.js';
@@ -10,22 +11,23 @@ export class InquilinosService {
   async create(createInquilinoDto: CreateInquilinoDto, token: string, workspaceId: string) {
     const client = this.supabaseService.getClient(token);
 
-    const { data, error } = await client
-      .from('inquilinos')
-      .insert([
-        {
-          gestor_id: workspaceId,
-          ...createInquilinoDto,
-        },
-      ])
-      .select()
-      .single();
+    // The tenant is initially orphaned (not linked to a rental). Scoped delegates
+    // cannot SELECT orphan tenants through can_read_inquilino yet, so INSERT
+    // ... RETURNING * would trigger a separate SELECT policy check and fail.
+    // Generate the UUID in the API and only acknowledge the insert after it succeeds.
+    const inquilino = {
+      ...createInquilinoDto,
+      gestor_id: workspaceId,
+      id: randomUUID(),
+    };
 
-    if (error || !data) {
-      throw new UnprocessableEntityException(error?.message || 'Error al crear inquilino');
+    const { error } = await client.from('inquilinos').insert([inquilino]);
+
+    if (error) {
+      throw new UnprocessableEntityException(error.message);
     }
 
-    return data;
+    return inquilino;
   }
 
   async findAll(token: string, limit = 10, offset = 0) {

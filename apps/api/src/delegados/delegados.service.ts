@@ -146,7 +146,7 @@ export class DelegadosService {
         expiresAt: i.expires_at,
         channels: {
           inApp: 'created',
-          email: 'sent',
+          email: 'pending', // The outbox is not an actual email delivery confirmation.
         },
         createdAt: i.created_at,
       };
