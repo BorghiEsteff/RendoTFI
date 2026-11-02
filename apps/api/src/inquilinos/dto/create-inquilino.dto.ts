@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class GaranteDto {
   @IsString()
@@ -32,8 +32,11 @@ export class CreateInquilinoDto {
   telefono?: string;
 
   @IsString()
-  @IsOptional()
-  documento?: string;
+  @IsNotEmpty({ message: 'El DNI es obligatorio' })
+  @Matches(/^\s*(?:\d[\s.-]*){7,9}$/, {
+    message: 'Ingresá un DNI válido de 7 a 9 dígitos',
+  })
+  documento: string;
 
   @IsArray()
   @IsOptional()
