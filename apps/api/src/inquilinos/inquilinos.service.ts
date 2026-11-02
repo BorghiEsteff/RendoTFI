@@ -41,12 +41,13 @@ export class InquilinosService {
     return inquilino;
   }
 
-  async findAll(token: string, limit = 10, offset = 0) {
+  async findAll(token: string, workspaceId: string, limit = 10, offset = 0) {
     const client = this.supabaseService.getClient(token);
 
     const { data, error, count } = await client
       .from('inquilinos')
       .select('*', { count: 'exact' })
+      .eq('gestor_id', workspaceId)
       .is('deleted_at', null)
       .range(offset, offset + limit - 1)
       .order('created_at', { ascending: false });
