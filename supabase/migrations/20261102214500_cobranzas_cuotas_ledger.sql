@@ -30,7 +30,7 @@ CREATE TABLE public.cobranza_pagos (
   anulado_por uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   motivo_anulacion text,
   CONSTRAINT cobranza_pagos_apertura_uk UNIQUE(cuota_id, tipo),
-  CONSTRAINT cobranza_pagos_tipo_check CHECK (
+  CONSTRAINT cobranza_pagos_combinacion_check CHECK (
     (tipo='apertura' AND medio IS NULL AND fecha_pago IS NULL)
     OR (tipo='cobro' AND medio IS NOT NULL AND fecha_pago IS NOT NULL)
   ),
