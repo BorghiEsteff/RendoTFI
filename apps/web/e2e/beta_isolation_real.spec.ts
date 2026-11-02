@@ -137,7 +137,7 @@ test.describe('B007b — Inventario y Aislamiento Real Navegador', () => {
     }
 
     const { data: tenant, error: tenantError } = await fixtures.adminClient.from('inquilinos')
-      .insert({ gestor_id: gestorA.id, nombre_completo: 'Contrato QA local aislado' })
+      .insert({ gestor_id: gestorA.id, nombre_completo: 'Contrato QA local aislado', documento: `9${String(Date.now()).slice(-8)}` })
       .select('id').single();
     expect(tenantError).toBeNull();
     expect(tenant?.id).toBeTruthy();
