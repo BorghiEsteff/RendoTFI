@@ -71,6 +71,7 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+type PendingPhoto = { file: File; previewUrl: string };
 
 export function UnidadForm({ 
   initialData, 
@@ -97,8 +98,10 @@ export function UnidadForm({
   const submitInFlightRef = useRef(false);
   // A stable request UUID per new tariff field survives network response loss and retries.
   const newTariffRequestKeysRef = useRef<Map<string, string>>(new Map());
-  const [saveError, setSaveError] = useState<string | null>(searchParams.get('save_error') ? 'La unidad quedó como borrador. Revisá las tarifas y guardá nuevamente.' : null);
+  const [saveError, setSaveError] = useState<string | null>(searchParams.get('save_error') ? 'La unidad quedó como borrador. Revisá las fotos y tarifas antes de volver a guardar.' : null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+  const pendingPhotosRef = useRef<PendingPhoto[]>([]);
   const [activeSection, setActiveSection] = useState('basicos');
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -193,7 +196,7 @@ export function UnidadForm({
   const hasUnsavedChanges = () => {
     const originalAddress = typeof initialData?.direccion_texto === 'string' ? initialData.direccion_texto : '';
     return userEditedRef.current && (JSON.stringify(form.getValues()) !== initialValuesSnapshotRef.current
-      || searchAddress !== originalAddress);
+      || searchAddress !== originalAddress || pendingPhotosRef.current.length > 0);
   };
 
   const { fields, append, remove } = useFieldArray({
@@ -202,6 +205,10 @@ export function UnidadForm({
   });
 
   const fotos = form.watch('fotos') || [];
+  const photoCount = fotos.length + pendingPhotos.length;
+  useEffect(() => () => {
+    pendingPhotosRef.current.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
+  }, []);
   const ubicacionExacta = form.watch('ubicacion_exacta');
   const estadoActual = typeof initialData?.estado === 'string' ? initialData.estado : 'borrador';
   const zonasDisponibles = zonas.flatMap((ciudad) =>
@@ -362,13 +369,40 @@ export function UnidadForm({
     setAddressResultName(null);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    if (!unidadId) {
-      setUploadError('Guardá primero la unidad como borrador para poder subir fotos.');
+  // Las fotos se mantienen locales mientras la Unidad todavía no tiene ID.
+  const stagePhoto = (file: File) => {
+    if (fotos.length + pendingPhotosRef.current.length >= 10) {
+      setUploadError('La unidad admite como máximo 10 fotos.');
       return;
     }
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setUploadError('Seleccioná una imagen PNG, JPG o WEBP de hasta 5 MB.');
+      return;
+    }
+    const updated = [...pendingPhotosRef.current, { file, previewUrl: URL.createObjectURL(file) }];
+    pendingPhotosRef.current = updated;
+    setPendingPhotos(updated);
+    userEditedRef.current = true;
+    setUploadError(null);
+  };
+
+  const removePendingPhoto = (index: number) => {
+    const photo = pendingPhotosRef.current[index];
+    if (!photo) return;
+    URL.revokeObjectURL(photo.previewUrl);
+    const updated = pendingPhotosRef.current.filter((_, i) => i !== index);
+    pendingPhotosRef.current = updated;
+    setPendingPhotos(updated);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+    if (!unidadId) {
+      stagePhoto(file);
+      e.target.value = '';
+      return;
+    }
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
       setUploadError('Seleccioná una imagen PNG, JPG o WEBP de hasta 5 MB.');
       return;
@@ -411,11 +445,6 @@ export function UnidadForm({
   };
 
   const handleNativeCameraUpload = async () => {
-    if (!unidadId) {
-      setUploadError('Guardá primero la unidad como borrador para poder subir fotos.');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const image = await Camera.getPhoto({
@@ -429,6 +458,10 @@ export function UnidadForm({
 
       const response = await fetch(image.webPath);
       const blob = await response.blob();
+      if (!unidadId) {
+        stagePhoto(new File([blob], `foto-camara-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+        return;
+      }
       const fileName = `${unidadId}/${Date.now()}-native-capture.jpg`;
 
       const { error: uploadError } = await supabase.storage
@@ -483,7 +516,7 @@ export function UnidadForm({
 
   const onSubmit = async (data: FormData, publishAfterSave = false) => {
     if (submitInFlightRef.current) return;
-    if (publishAfterSave && (!data.titulo_es?.trim() || !data.modalidades.some((m) => m.precio > 0) || !data.ubicacion_aprox || !data.fotos?.length)) {
+    if (publishAfterSave && (!data.titulo_es?.trim() || !data.modalidades.some((m) => m.precio > 0) || !data.ubicacion_aprox || !(data.fotos?.length || pendingPhotosRef.current.length))) {
       setSaveError('Para publicar, completá un título, una tarifa mayor a cero, la ubicación y al menos una foto.');
       return;
     }
@@ -523,6 +556,37 @@ export function UnidadForm({
       id = savedUnidad.id;
       if (!id) throw new Error('El servidor no devolvió el identificador de la unidad.');
       if (!unidadId) newlyCreatedId = id;
+
+      // Subir a la carpeta definitiva después de crear la unidad como borrador.
+      // No publicar hasta que la asociación de todas las fotos quede confirmada.
+      if (pendingPhotosRef.current.length > 0) {
+        const urls = [...(form.getValues('fotos') || [])];
+        const uploadedPaths: string[] = [];
+        try {
+          for (const photo of pendingPhotosRef.current) {
+            const filePath = `${id}/${crypto.randomUUID()}-${photo.file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+            const { error } = await supabase.storage.from('unidades').upload(filePath, photo.file);
+            if (error) throw error;
+            uploadedPaths.push(filePath);
+            const { data: { publicUrl } } = supabase.storage.from('unidades').getPublicUrl(filePath);
+            urls.push(publicUrl);
+          }
+          const photosResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/unidades/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ fotos: urls }),
+          });
+          if (!photosResponse.ok) throw new Error('No fue posible asociar las fotos a la publicación.');
+        } catch (photoError) {
+          // Es un borrador recuperable; evitar que queden objetos huérfanos.
+          if (uploadedPaths.length) await supabase.storage.from('unidades').remove(uploadedPaths);
+          throw photoError;
+        }
+        form.setValue('fotos', urls, { shouldDirty: false });
+        pendingPhotosRef.current.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
+        pendingPhotosRef.current = [];
+        setPendingPhotos([]);
+      }
 
       if (initialData?.modalidades_precio && id) {
         const removed = initialData.modalidades_precio
@@ -588,7 +652,7 @@ export function UnidadForm({
         if (!publishResponse.ok) throw new Error('Los cambios se guardaron, pero no se pudo publicar. La unidad sigue como borrador.');
       }
 
-      if (!unidadId) {
+      if (!unidadId && !publishAfterSave) {
         router.push(`/${locale}/mis-unidades/${id}/editar`);
       } else {
         router.push(`/${locale}/mis-unidades`);
@@ -597,7 +661,7 @@ export function UnidadForm({
     } catch (e) {
       console.error(e);
       if (newlyCreatedId) {
-        router.push(`/${locale}/mis-unidades/${newlyCreatedId}/editar?save_error=tarifas`);
+        router.push(`/${locale}/mis-unidades/${newlyCreatedId}/editar?save_error=parcial`);
       } else {
         setSaveError(e instanceof Error ? e.message : 'No se pudo guardar. Intentá nuevamente.');
       }
@@ -1150,12 +1214,12 @@ export function UnidadForm({
                 Galería de Fotos
               </CardTitle>
               <CardDescription className="text-sm leading-relaxed text-muted-foreground">
-                ({fotos.length}/10) fotos de la unidad{!unidadId ? ' · Guardá el borrador antes de subirlas' : ''}
+                ({photoCount}/10) fotos de la unidad{!unidadId ? ' · Se subirán al guardar' : ''}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-0 space-y-4">
               {uploadError && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{uploadError}</p>}
-              {fotos.length > 0 && (
+              {photoCount > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                   {fotos.map((foto, index) => (
                     <div key={index} className="relative group rounded-xl border aspect-square bg-muted overflow-hidden shadow-sm hover:shadow-md transition-all">
@@ -1172,10 +1236,27 @@ export function UnidadForm({
                       </Button>
                     </div>
                   ))}
+                  {pendingPhotos.map(({ previewUrl }, index) => (
+                    <div key={previewUrl} className="relative group rounded-xl border aspect-square bg-muted overflow-hidden shadow-sm">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={previewUrl} alt={`Foto pendiente ${index + 1}`} className="object-cover w-full h-full" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        aria-label={`Quitar foto pendiente ${index + 1}`}
+                        disabled={isSubmitting}
+                        className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full"
+                        onClick={() => removePendingPhoto(index)}
+                      >
+                        &times;
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {fotos.length < 10 && (
+              {photoCount < 10 && (
                 <div className="border-2 border-dashed border-border/80 hover:border-primary/50 transition-colors rounded-2xl p-6 bg-muted/10 flex flex-col items-center justify-center text-center space-y-3">
                   <div className="p-3 rounded-full bg-primary/10 text-primary">
                     <UploadCloud className="w-6 h-6" />
@@ -1193,19 +1274,19 @@ export function UnidadForm({
                       type="button"
                       variant="secondary"
                       onClick={handleNativeCameraUpload}
-                      disabled={isSubmitting || !unidadId}
+                      disabled={isSubmitting}
                       className="flex items-center justify-center gap-2 font-mono text-xs uppercase rounded-xl min-h-[44px] min-w-[44px]"
                     >
                       <CameraIcon className="w-4 h-4 text-primary" />
                       Cámara / Galería Móvil
                     </Button>
-                    <label className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-mono text-xs font-semibold rounded-xl transition-colors shadow-xs min-h-[44px] min-w-[44px] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${unidadId ? 'cursor-pointer hover:bg-primary/90' : 'cursor-not-allowed opacity-50'}`}>
+                    <label className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-mono text-xs font-semibold rounded-xl transition-colors shadow-xs min-h-[44px] min-w-[44px] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-pointer hover:bg-primary/90`}>
                       <span>Seleccionar Archivos</span>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handleFileUpload}
-                        disabled={isSubmitting || !unidadId}
+                        disabled={isSubmitting}
                         className="sr-only"
                       />
                     </label>
@@ -1510,7 +1591,7 @@ export function UnidadForm({
               unidadId ? 'Guardar cambios' : 'Guardar borrador'
             )}
           </Button>
-          {unidadId && estadoActual === 'borrador' && <Button type="button" disabled={isSubmitting} onClick={form.handleSubmit((data) => onSubmit(data, true), onInvalid)} className="min-h-11 bg-emerald-700 hover:bg-emerald-800 text-white">Guardar y publicar</Button>}
+          {estadoActual === 'borrador' && <Button type="button" disabled={isSubmitting} onClick={form.handleSubmit((data) => onSubmit(data, true), onInvalid)} className="min-h-11 bg-emerald-700 hover:bg-emerald-800 text-white">Guardar y publicar</Button>}
         </div>
         </div>
       </div>
