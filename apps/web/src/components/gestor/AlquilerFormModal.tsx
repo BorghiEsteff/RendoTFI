@@ -673,7 +673,7 @@ export function AlquilerFormModal({
           </Button>
         }
       />
-      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 box-border">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 box-border">
         <DialogHeader className="pr-14 text-left">
           <DialogTitle className="text-base sm:text-lg font-bold">Nuevo Alquiler</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -754,6 +754,24 @@ export function AlquilerFormModal({
                 Revisá los campos señalados antes de guardar. No se registró ningún alquiler.
               </div>
             )}
+            <nav aria-label="Pasos del registro" data-testid="alquiler-wizard-progress"
+              className="grid grid-cols-3 gap-2">
+              {([[1, 'Datos y fechas'], [2, 'Precio y cobros'], [3, 'Confirmación']] as const)
+                .map(([number, label]) => (
+                <div key={number} aria-current={wizardStep === number ? 'step' : undefined}
+                  className={'rounded-lg border px-2 py-3 text-center text-xs font-semibold ' +
+                    (wizardStep === number ? 'border-primary bg-primary/10 text-primary' :
+                      wizardStep > number ? 'border-emerald-500/30 bg-emerald-500/5' :
+                        'border-border bg-muted/20 text-muted-foreground')}>
+                  <span className="block font-mono text-[10px] opacity-70">PASO {number}</span>
+                  {label}
+                </div>
+              ))}
+            </nav>
+            {wizardError && <p role="alert" data-testid="alquiler-wizard-error"
+              className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{wizardError}</p>}
+
+            <div className={wizardStep === 1 ? 'space-y-4' : 'hidden'} data-testid="alquiler-wizard-datos">
             {/* Selector Canónico de Modalidad */}
             <div className="grid gap-1.5 p-3 rounded-xl bg-muted/20 border border-border/80">
               <div className="flex items-center justify-between">
@@ -997,6 +1015,104 @@ export function AlquilerFormModal({
                 </div>
               </div>
             </div>
+
+            </div>
+            <div className={wizardStep === 2 ? 'space-y-4' : 'hidden'} data-testid="alquiler-wizard-precios">
+              <section className="space-y-3 rounded-2xl border border-border bg-muted/20 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold">
+                      {watchedModalidad === 'por_hora' ? 'Tarifa del turno' :
+                        watchedModalidad === 'diaria' ? 'Precio de la estadía' : 'Condiciones del contrato mensual'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {watchedModalidad === 'por_hora'
+                        ? 'Duración real del turno, incluso si termina después de medianoche.'
+                        : watchedModalidad === 'diaria'
+                          ? 'Noches desde la entrada hasta la salida, sin contar el día del check-out.'
+                          : 'Períodos contractuales de meses calendario, sin aproximaciones de 30 días.'}
+                    </p>
+                  </div>
+                  <span className="rounded-lg bg-background px-3 py-2 text-sm font-semibold"
+                    data-testid="alquiler-cantidad">
+                    {quantity.toLocaleString('es-AR', { maximumFractionDigits: 2 })}{' '}
+                    {watchedModalidad === 'por_hora' ? 'horas' : watchedModalidad === 'diaria' ? 'noches' : 'meses'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tarifa_base">
+                      {watchedModalidad === 'por_hora' ? 'Tarifa por hora ($ ARS)' :
+                        watchedModalidad === 'diaria' ? 'Tarifa por noche ($ ARS)' : 'Alquiler mensual ($ ARS)'}
+                    </Label>
+                    <Input id="tarifa_base" data-testid="alquiler-tarifa-base"
+                      type="number" min={0} step="any"
+                      {...form.register('tarifa_base', { valueAsNumber: true })}
+                      className="min-h-11"/>
+                    <p className="text-[11px] text-muted-foreground">
+                      {tariffSuggestion === null
+                        ? 'Si no hay tarifa unitaria, ingresá un precio o el total acordado.'
+                        : 'Sugerida a partir de la tarifa real de la unidad.'}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cargos_extra">Otros cargos ($ ARS)</Label>
+                    <Input id="cargos_extra" type="number" min={0} step="any"
+                      {...form.register('cargos_extra', { valueAsNumber: true })} className="min-h-11"/>
+                    <p className="text-[11px] text-muted-foreground">Limpieza, servicios u otros cargos pactados.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="descuento">Descuento ($ ARS)</Label>
+                    <Input id="descuento" type="number" min={0} step="any"
+                      {...form.register('descuento', { valueAsNumber: true })} className="min-h-11"/>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background p-3 text-sm"
+                  data-testid="alquiler-precio-calculado">
+                  <span className="text-xs text-muted-foreground">Desglose calculado: </span>
+                  {quantity.toLocaleString('es-AR', { maximumFractionDigits: 2 })} × {amountCurrency(watchedTarifa)}
+                  {' + '}{amountCurrency(watchedExtras)}{' − '}{amountCurrency(watchedDescuento)}
+                  {' = '}<strong>{amountCurrency(rentalAmount(quantity, watchedTarifa, watchedExtras, watchedDescuento))}</strong>
+                </div>
+              </section>
+              {watchedModalidad === 'mensual' && (
+                <section className="space-y-3 rounded-2xl border border-border p-4 sm:p-5"
+                  data-testid="alquiler-mensual-condiciones">
+                  <h3 className="text-sm font-bold">Vencimientos y ajustes acordados</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dia_vencimiento">Día de vencimiento mensual</Label>
+                      <Input id="dia_vencimiento" type="number" min={1} max={31}
+                        {...form.register('dia_vencimiento', { valueAsNumber: true })} className="min-h-11"/>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ajuste_porcentaje">Ajuste pactado (%)</Label>
+                      <Input id="ajuste_porcentaje" type="number" min={0} max={100} step="any"
+                        {...form.register('ajuste_porcentaje', { valueAsNumber: true })} className="min-h-11"/>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ajuste_cada_meses">Revisar ajuste cada (meses)</Label>
+                      <Input id="ajuste_cada_meses" type="number" min={1} max={60}
+                        {...form.register('ajuste_cada_meses', { valueAsNumber: true })} className="min-h-11"/>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3 text-xs" data-testid="alquiler-mensual-vencimientos">
+                    <span className="font-semibold">Próximos vencimientos proyectados: </span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {[0, 1, 2].slice(0, Math.min(3, Math.ceil(quantity))).map((month) => {
+                        const base = addMonths(watchedFechaInicio, month);
+                        const last = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+                        const due = new Date(base.getFullYear(), base.getMonth(), Math.min(Number(watchedVencimiento) || 1, last));
+                        return <span key={month} className="rounded bg-background px-2 py-1">{format(due, 'dd/MM/yyyy')}</span>;
+                      })}
+                    </div>
+                    <p className="mt-2 text-muted-foreground">
+                      Condiciones guardadas como referencia. No generan cobros,
+                      vencimientos exigibles ni aumentos automáticos. El total no contempla futuros ajustes.
+                    </p>
+                  </div>
+                </section>
+              )}
 
             {/* Monto Total */}
             <div className="grid gap-1.5">
