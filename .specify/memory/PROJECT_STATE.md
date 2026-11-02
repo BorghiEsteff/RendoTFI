@@ -23,3 +23,10 @@
 - Migración aditiva aplicada a Supabase Beta; no genera cuotas ni cobros automáticamente. Pruebas SQL transaccionales PASS, sin modificar los 2 alquileres actuales.
 - API y web compilan en Vercel; Vitest, Playwright con sesiones reales y concurrencia simultánea NO RUN. No se utilizaron GitHub Actions.
 - Estado de feature: implementada y con validación SQL/compilación, **pendiente de aceptación funcional real**. Los estados históricos N01–N08 arriba no se convierten en PASS por esta entrega.
+
+## Actualización 2026-11-02 — REN-DISP-01 Disponibilidad
+
+- Auditoría de la implementación y de Spec Kit 003: GiST de conflictos confirmado y probado; diferencias entre política de bloqueo por seña de la especificación y bloqueo de todo alquiler registrado en implementación (NO resolver sin decisión de negocio).
+- Proyección segura y limitada de ocupaciones (SQL RPC + API pública/autenticada); calendario público orientativo; consulta previa en wizard; error concurrente `23P01` mapeado a 409.
+- Documento de alcance, hallazgos y pruebas en `specs/003-modality-aware-availability/evidence/2026-11-02-audit-and-projection.md`.
+- Pendientes: configurar cierres manuales, horarios, buffer e herencia por grupos, calendario operativo completo, ejecutar Vitest/Playwright y aceptación funcional con cuentas reales. No presentar ausencia de reservas como disponibilidad garantizada.
