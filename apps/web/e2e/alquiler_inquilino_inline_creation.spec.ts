@@ -37,6 +37,7 @@ test.describe('Inquilino creado desde un alquiler queda seleccionado', () => {
     await page.getByRole('button', {name: /Inquilino/}).last().click();
     await expect(page.getByTestId('FORM-004')).toBeVisible();
     await page.locator('#nombre_completo').fill('Mariana Inquilina');
+    await page.locator('#documento').fill('12.345.678');
     await page.getByTestId('FORM-004').getByRole('button', {name: 'Continuar'}).click();
     await page.getByRole('checkbox').first().check();
     await page.getByRole('button', {name: 'Confirmar y Guardar'}).click();
