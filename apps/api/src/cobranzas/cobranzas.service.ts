@@ -56,7 +56,7 @@ export class CobranzasService {
     switch (error.code) {
       case '42501': throw new ForbiddenException(message);
       case 'P0002': case 'PGRST116': throw new NotFoundException(message);
-      case '22023': throw new BadRequestException(message);
+      case '22023': case '22007': case '22008': throw new BadRequestException(message);
       case '23505': throw new ConflictException(message);
       default: throw new UnprocessableEntityException(message);
     }
@@ -138,7 +138,7 @@ export class CobranzasService {
     token: string, cuotaId: string, dto: { importe: number; fecha_pago: string; medio: string; referencia?: string },
   ) {
     if (!Number.isFinite(dto.importe) || dto.importe <= 0 ||
-        dto.importe > 99999999999 || Math.round(dto.importe * 100) !== dto.importe * 100) {
+        dto.importe > 99999999999 || Math.abs(Math.round(dto.importe * 100) - dto.importe * 100) > 0.000001) {
       throw new BadRequestException('El importe debe ser positivo y tener como máximo dos decimales');
     }
     const { data, error } = await this.supabase.getClient(token).rpc('cobranzas_registrar_pago', {
