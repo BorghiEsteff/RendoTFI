@@ -27,7 +27,7 @@ Confirm:
   source, reason, payment state, Seña amount or notes.
 - No availability code reads or writes Unidad.estado.
 - CardUnidad contains no Math.random or unverified availability labels.
-- Alquiler mutations that can affect a Seña block call one transactional database function.
+- Alquiler mutations that can affect a registered-rental occupancy block call one transactional database function; Seña payment does not govern its lifecycle.
 - Authoritative paths do not call resilientStore.
 
 Suggested searches:
