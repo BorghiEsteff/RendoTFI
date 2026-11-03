@@ -11,7 +11,7 @@
 | Formulario no comunicaba fechas ocupadas | Wizard por hora/día/mes pedía fechas, pero no consultaba disponibilidad previa. | Confusión y validación tardía. |
 | Marketplace mostraba publicados sin calendario | Estado de publicación ≠ ocupación; una unidad publicada puede tener intervalos ocupados. | Usuarios podrían interpretar publicado como siempre disponible. |
 | Especificación 003 parcialmente implementada | No hay tablas \`bloqueos_disponibilidad\`, \`configuraciones_disponibilidad_unidad\` ni \`configuraciones_disponibilidad_grupo\`. | No existen horarios, buffer, mantenimiento ni revisión explícita. |
-| Política de seña contradictoria | Especificación 003: bloquear solo cuando la seña opcional fue cobrada. Implementación actual: **todos** los alquileres no cancelados bloquean, con o sin seña. | **No cambiar sin decisión de negocio**, porque liberar contratos existentes podría permitir sobreventa. |
+| Política de seña (D1 RESUELTA el 2026-11-03) | El propietario confirmó que todo alquiler registrado bloquea su intervalo desde el alta sin exigir seña. | Mantener la implementación de exclusión GiST, mostrar aviso público de alquiler vigente y conservar Unidad.estado publicada. |
 
 ## Cambios implementados en REN-DISP-01
 
@@ -33,7 +33,7 @@
 
 ## Decisiones pendientes antes de la implementación completa de specs/003
 
-- **D1 Bloqueo de contratos**: ¿todo alquiler registrado debe bloquear desde su alta, o solo al cobrar la seña o confirmar una reserva? Si se adopta lo segundo, hay que introducir \`estado_reserva\`, transiciones auditables y backfill explícito, sin interpretar \`monto_sena\` como confirmación.
+- **D1 RESUELTA (2026-11-03)**: el alquiler registrado no cancelado/no eliminado bloquea su intervalo, sin Seña. La Unidad sigue pública. Si ahora está alquilada, se anuncia hasta cuándo; reservas futuras se muestran únicamente en el calendario. Ver ADR-REN-DISP-02 y spec.md.
 - **D2 Bloqueos manuales**: mantenimiento, limpieza, uso privado; definir quién puede crear/liberar y motivos, y si impiden nuevas reservas de forma global.
 - **D3 Horarios y buffers**: calendario semanal de unidades por hora, minutos entre turnos, herencia de grupo y zonas horarias. Cambios de configuración deben validar futuras reservas antes de activarse.
 - **D4 Calendario avanzado**: navegación entre meses, detalle por intervalos horarios y leyenda de estado/publicación; advertir disponibilidad parcial y reintentos ante fallos.
