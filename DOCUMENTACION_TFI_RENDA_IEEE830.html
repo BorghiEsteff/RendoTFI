@@ -479,7 +479,7 @@
       <ul>
         <li><a href="#caratula">Carátula Académica</a></li>
         <li><a href="#prologo">Prólogo y Agradecimientos</a></li>
-        <li><a href="#resumen">Resumen / Abstract</a></li>
+        <li><a href="#resumen">Resumen / Resumen Ejecutivo</a></li>
         <li><a href="#indices">Índices Generales</a></li>
       </ul>
 
@@ -630,12 +630,12 @@
         La arquitectura adopta un monorepo administrado mediante Turborepo y pnpm, articulando un frontend en Next.js 14 (App Router con renderizado híbrido y multi-idioma) y un backend modular en NestJS conectado a PostgreSQL gestionado sobre Supabase. La seguridad de acceso a los datos descansa en políticas nativas de Row Level Security (RLS) y autenticación segura sin contraseña vía OTP por SMS y correo electrónico. El ciclo de vida adoptado fue el modelo en espiral con verificación de calidad automatizada mediante una suite de pruebas End-to-End (E2E) construida en Playwright, validando la integridad transaccional y la solidez operativa del aplicativo.
       </p>
 
-      <h2 class="section-title">Abstract</h2>
-      <p lang="en" style="font-style: italic;">
-        This Final Degree Project presents the design, formal specification, and full-stack implementation of <strong>Rendo</strong>, a multi-tenant Software as a Service (SaaS) platform featuring a public real estate marketplace tailored for short-term and long-term rentals in Goya, Corrientes, Argentina. The system addresses a dual-sided need: it offers searchers a transparent exploration portal equipped with OpenStreetMap interactive mapping and privacy-preserving approximate geolocations, while equipping property Managers (Gestores) with a centralized dashboard to administer rental Units, lease historical records (Alquileres), payment schedules, deposits, digital contracts, and granular staff delegations (Delegados).
+      <h2 class="section-title">Abstract (Resumen Ejecutivo)</h2>
+      <p>
+        El presente Trabajo Final Integrador expone el diseño, la especificación formal y la implementación de <strong>Rendo</strong>, una plataforma bajo el modelo de Software como Servicio (SaaS) multi-inquilino que incorpora un marketplace público de bienes raíces adaptado para alquileres de corta y larga estancia en la ciudad de Goya, provincia de Corrientes, República Argentina. El sistema responde a una doble necesidad operativa: proporciona a los buscadores un portal transparente de descubrimiento con mapas interactivos basados en OpenStreetMap y geolocalizaciones aproximadas para preservar la privacidad, al tiempo que dota a los Gestores de un panel centralizado para administrar Unidades en alquiler, registros históricos de Alquileres, planes de pago, depósitos en garantía, contratos digitales y delegaciones de personal con permisos granulares (Delegados).
       </p>
-      <p lang="en" style="font-style: italic;">
-        Distinct from traditional intermediaries that retain booking funds and extract commission fees, Rendo never processes rental escrow, sustaining its business through a predictable monthly SaaS quota subscription (Cupo) integrated with Mercado Pago webhooks. System requirements were formally compiled pursuant to the IEEE 830 standard, establishing eighteen functional and ten non-functional requirements accompanied by detailed use cases and sequence diagrams. The engineering architecture utilizes a Turborepo monorepo with Next.js 14 App Router, NestJS modular backend, and Supabase PostgreSQL with strict Row Level Security (RLS) enforcement and passwordless SMS/Email OTP authentication. Verification was conducted using Playwright End-to-End test suites, ensuring robust software reliability.
+      <p>
+        A diferencia de los intermediarios tradicionales que retienen los fondos de las reservas y cobran comisiones porcentuales, Rendo nunca intermedia el dinero de los alquileres entre partes, sosteniendo su modelo de negocio a través de una suscripción mensual predecible por Cupo de Unidades administradas, integrada con webhooks de Mercado Pago. Los requerimientos del sistema fueron formalmente elaborados conforme al estándar internacional IEEE 830, estableciendo dieciocho requerimientos funcionales y diez requerimientos no funcionales acompañados de casos de uso detallados y diagramas de secuencia. La arquitectura de ingeniería emplea un monorepo gestionado con Turborepo que articula Next.js 14 (App Router), un backend modular en NestJS y PostgreSQL en Supabase con estricta aplicación de seguridad a nivel de filas (Row Level Security - RLS). La verificación se llevó a cabo mediante suites de pruebas automatizadas End-to-End con Playwright, garantizando una sólida confiabilidad del software.
       </p>
     </section>
 
@@ -647,7 +647,7 @@
       <ul class="academic-list" style="list-style-type: none; margin-left: 0;">
         <li><strong>Carátula Académica</strong> .................................................................................................... Pág. 1</li>
         <li><strong>Prólogo, Dedicatorias y Agradecimientos</strong> ................................................................. Pág. 2</li>
-        <li><strong>Resumen y Abstract</strong> ................................................................................................... Pág. 3</li>
+        <li><strong>Resumen y Resumen Ejecutivo</strong> ................................................................................................... Pág. 3</li>
         <li><strong>Índices Generales (Contenidos, Figuras, Tablas)</strong> .......................................................... Pág. 4</li>
         <li><strong>Capítulo 1. Introducción</strong> ............................................................................................. Pág. 5
           <ul style="list-style-type: none; margin-left: 20px;">
@@ -694,7 +694,7 @@
       <h2 class="section-title">Índice de Figuras</h2>
       <ul class="academic-list" style="list-style-type: none; margin-left: 0;">
         <li><strong>Figura 1.</strong> Diagrama de Casos de Uso General del Sistema Rendo (Pág. 16)</li>
-        <li><strong>Figura 2.</strong> Diagrama de Secuencia: Alta de Cuenta y Verificación OTP (Pág. 24)</li>
+        <li><strong>Figura 2.</strong> Diagrama de Secuencia: Alta de Cuenta y Autenticación Directa (Pág. 24)</li>
         <li><strong>Figura 3.</strong> Diagrama de Secuencia: Creación de Unidad y Control de Cupo (Pág. 25)</li>
         <li><strong>Figura 4.</strong> Diagrama de Secuencia: Registro de Alquiler y Pagos (Pág. 26)</li>
         <li><strong>Figura 5.</strong> Arquitectura Global en Capas del Sistema Rendo (Pág. 38)</li>
@@ -706,7 +706,7 @@
       <ul class="academic-list" style="list-style-type: none; margin-left: 0;">
         <li><strong>Tabla 1.</strong> Requerimientos Funcionales del Sistema (Estándar IEEE 830) (Pág. 13)</li>
         <li><strong>Tabla 2.</strong> Requerimientos No Funcionales del Sistema (Estándar IEEE 830) (Pág. 15)</li>
-        <li><strong>Tabla 3.</strong> Caso de Uso CU-01: Registrar Usuario vía OTP (Pág. 17)</li>
+        <li><strong>Tabla 3.</strong> Caso de Uso CU-01: Registro e Inicio de Sesión de Usuario (Pág. 17)</li>
         <li><strong>Tabla 4.</strong> Caso de Uso CU-02: Publicar y Gestionar Unidad (Pág. 18)</li>
         <li><strong>Tabla 5.</strong> Caso de Uso CU-03: Registrar Alquiler y Pagos (Pág. 19)</li>
         <li><strong>Tabla 6.</strong> Caso de Uso CU-04: Contratar o Modificar Cupo (Pág. 20)</li>
@@ -759,7 +759,7 @@
         <li><strong>Especificar formalmente los requisitos del sistema:</strong> Elaborar la especificación de requerimientos de software (SRS) respetando las cláusulas, estructura y completitud del estándar IEEE 830, definiendo con precisión requerimientos funcionales y no funcionales.</li>
         <li><strong>Diseñar una arquitectura escalable y desacoplada:</strong> Implementar un monorepo administrado mediante Turborepo que articule un frontend público y panel privado en Next.js 14 (App Router) junto con un backend modular en NestJS.</li>
         <li><strong>Implementar un modelo de datos flexible:</strong> Proveer un esquema de base de datos en PostgreSQL (Supabase) que permita modelar la heterogeneidad de Unidades (departamentos, salones, cabañas) sin migraciones estructurales, empleando atributos dinámicos en formato JSON.</li>
-        <li><strong>Asegurar el control de acceso y privacidad:</strong> Diseñar políticas de Row Level Security (RLS) en base de datos para aislar los datos entre Gestores y Delegados, e incorporar geolocalización aproximada en el mapa público y autenticación segura sin contraseñas (OTP vía SMS y correo electrónico).</li>
+        <li><strong>Asegurar el control de acceso y privacidad:</strong> Diseñar políticas de Row Level Security (RLS) en base de datos para aislar los datos entre Gestores y Delegados, e incorporar geolocalización aproximada en el mapa público y autenticación segura y cifrada de usuarios.</li>
         <li><strong>Monetizar la plataforma mediante suscripciones por Cupo:</strong> Integrar la pasarela de Mercado Pago y sus webhooks para gestionar de manera automatizada el cobro recurrente por volumen de Unidades activas, sin retener dinero de los alquileres.</li>
         <li><strong>Verificar la calidad del software:</strong> Diseñar e implementar una batería integral de pruebas automatizadas End-to-End (E2E) mediante Playwright para asegurar la robustez de los flujos críticos de la plataforma.</li>
       </ol>
@@ -834,9 +834,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><strong>RF-01</strong></td>
-              <td>Autenticación y Registro vía OTP</td>
-              <td>El sistema debe permitir el registro e inicio de sesión de usuarios mediante número de teléfono celular con código de un solo uso (OTP vía SMS) o correo electrónico verificado, sin requerir contraseñas permanentes.</td>
+              <td><strong>RF-01</strong></td>\n              <td>Registro y Autenticación de Usuarios</td>\n              <td>El sistema debe permitir el registro e inicio de sesión directo de usuarios mediante correo electrónico, nombre completo y contraseña segura gestionada por Supabase Auth, habilitando el acceso inmediato sin envío de códigos de verificación externos.</td>
               <td><span class="req-badge badge-high">Alta</span></td>
             </tr>
             <tr>
@@ -1051,7 +1049,7 @@
 
           <!-- Casos de Uso del Buscador -->
           <ellipse cx="410" cy="80" rx="120" ry="24" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8"/>
-          <text x="410" y="84" text-anchor="middle" font-size="11.5" font-family="sans-serif" font-weight="600" fill="#1e3a8a">CU-01: Autenticarse vía OTP</text>
+          <text x="410" y="84" text-anchor="middle" font-size="11.5" font-family="sans-serif" font-weight="600" fill="#1e3a8a">CU-01: Registrarse e Iniciar Sesión</text>
 
           <ellipse cx="410" cy="135" rx="125" ry="24" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8"/>
           <text x="410" y="139" text-anchor="middle" font-size="11.5" font-family="sans-serif" font-weight="600" fill="#1e3a8a">CU-06: Buscar en Marketplace</text>
@@ -1147,7 +1145,7 @@
         <table class="formal-table">
           <thead>
             <tr>
-              <th colspan="2">Caso de Uso: CU-01 — Registrarse e Iniciar Sesión vía OTP</th>
+              <th colspan="2">Caso de Uso: CU-01 — Registro e Inicio de Sesión de Usuario</th>
             </tr>
           </thead>
           <tbody>
@@ -1157,30 +1155,31 @@
             </tr>
             <tr>
               <td><strong>Precondición</strong></td>
-              <td>El usuario dispone de un dispositivo telefónico móvil con cobertura SMS o cuenta de correo electrónico.</td>
+              <td>El usuario dispone de acceso a la plataforma web a través de un navegador moderno.</td>
             </tr>
             <tr>
               <td><strong>Curso Normal (Paso a Paso)</strong></td>
               <td>
-                1. El usuario selecciona la opción "Ingresar" en la cabecera de la aplicación.<br>
-                2. El sistema despliega el formulario solicitando número de teléfono celular o email.<br>
-                3. El usuario ingresa su número de teléfono con código de área (ej. 3777) y pulsa "Enviar Código".<br>
-                4. El sistema valida el formato, genera un token OTP numérico aleatorio y lo remite vía SMS por Supabase Auth.<br>
-                5. El sistema presenta la pantalla de verificación temporal.<br>
-                6. El usuario ingresa el código de 6 dígitos recibido y confirma.<br>
-                7. El sistema valida la coincidencia y vigencia del código, autentica al usuario, genera la sesión JWT con cookies seguras y redirige al panel o vista de origen.
+                1. El usuario selecciona la opción "Registrarse" o "Iniciar Sesión" en la cabecera de la aplicación.<br>
+                2. El sistema despliega el formulario solicitando los datos de la cuenta: nombre completo, correo electrónico o teléfono y contraseña.<br>
+                3. El usuario completa los datos en el formulario y pulsa el botón "Crear Cuenta" (o "Ingresar").<br>
+                4. El sistema valida en cliente y servidor que los campos obligatorios se encuentren completos y cumplan con el formato correspondiente.<br>
+                5. El sistema envía las credenciales a Supabase Auth (`signUp` / `signInWithPassword`), creando el registro en la base de datos de manera directa y sin requerir el envío ni ingreso de códigos de verificación externos.<br>
+                6. El sistema genera inmediatamente la sesión de usuario autenticada con token JWT y cookies seguras.<br>
+                7. El sistema redirige automáticamente al usuario al Dashboard o a la vista de origen donde intentó realizar una acción protegida.
               </td>
             </tr>
             <tr>
               <td><strong>Curso Alternativo</strong></td>
               <td>
-                4.1 Número de teléfono o prefijo inválido: El sistema emite el mensaje "Formato telefónico incorrecto" y retorna al paso 2.<br>
-                7.1 Código expirado o incorrecto: El sistema muestra el mensaje de error "Código no válido o vencido", habilita la opción de reintento y permanece en el paso 5.
+                4.1 Campos incompletos o formato inválido: El sistema resalta los campos con error de validación y permanece en el formulario.<br>
+                5.1 Correo o credencial ya registrada: El sistema emite el mensaje "Ya existe una cuenta asociada a este correo electrónico" y ofrece la opción de iniciar sesión.<br>
+                5.2 Contraseña incorrecta en inicio de sesión: El sistema notifica "Credenciales inválidas" y permite reintentar el ingreso.
               </td>
             </tr>
             <tr>
               <td><strong>Postcondición</strong></td>
-              <td>El usuario se encuentra autenticado con un perfil seguro en Supabase Auth y registro en la tabla `usuarios`.</td>
+              <td>El usuario queda autenticado y con sesión activa en el sistema, registrado en la tabla `usuarios`.</td>
             </tr>
           </tbody>
         </table>
@@ -1402,7 +1401,7 @@
               <td><strong>Curso Alternativo</strong></td>
               <td>
                 3.1 Sin resultados: Si ningún inmueble satisface la consulta, el sistema sugiere ampliar el radio geográfico o flexibilizar el rango de precios.<br>
-                6.1 Solicitud de ubicación exacta o contacto: Si el usuario desea ver la dirección exacta o contactar al Gestor por WhatsApp/chat y no inició sesión, el sistema despliega el modal de inicio de sesión OTP (CU-01).
+                6.1 Solicitud de ubicación exacta o contacto: Si el usuario desea ver la dirección exacta o contactar al Gestor por WhatsApp/chat y no inició sesión, el sistema despliega el modal de inicio de sesión / registro (CU-01).
               </td>
             </tr>
             <tr>
@@ -1465,19 +1464,19 @@
         Los diagramas de secuencia detallan la dimensión dinámica y temporal de la interacción entre los actores, la capa de presentación (Next.js), el controlador de API (NestJS) y la base de datos con políticas de seguridad (Supabase/PostgreSQL).
       </p>
 
-      <h3 class="sub-section-title">2.5.1 Secuencia: Autenticación Passwordless mediante OTP</h3>
+      <h3 class="sub-section-title">2.5.1 Secuencia: Registro y Autenticación Directa de Usuario</h3>
       <p>
-        La Figura 2 modela el intercambio de mensajes para el registro e inicio de sesión seguro sin contraseñas persistidas.
+        La Figura 2 modela el intercambio de mensajes para el registro e inicio de sesión directo de usuarios en el sistema, registrando sus credenciales seguras y generando la sesión de trabajo sin requerir códigos externos de verificación.
       </p>
 
       <div class="diagram-wrapper">
-        <!-- SVG Secuencia OTP -->
-        <svg viewBox="0 0 780 430" width="780" height="430" xmlns="http://www.w3.org/2000/svg">
+        <!-- SVG Secuencia Registro Directo -->
+        <svg viewBox="0 0 780 390" width="780" height="390" xmlns="http://www.w3.org/2000/svg">
           <!-- Líneas de Vida -->
-          <line x1="100" y1="60" x2="100" y2="400" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
-          <line x1="300" y1="60" x2="300" y2="400" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
-          <line x1="510" y1="60" x2="510" y2="400" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
-          <line x1="700" y1="60" x2="700" y2="400" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="100" y1="60" x2="100" y2="360" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="300" y1="60" x2="300" y2="360" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="510" y1="60" x2="510" y2="360" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="700" y1="60" x2="700" y2="360" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 4"/>
 
           <!-- Cabeceras de Objetos -->
           <rect x="40" y="20" width="120" height="40" rx="6" fill="#1e3a8a" stroke="#0f172a"/>
@@ -1487,64 +1486,48 @@
           <text x="300" y="45" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff">:Frontend (Next.js)</text>
 
           <rect x="440" y="20" width="140" height="40" rx="6" fill="#0f766e" stroke="#115e59"/>
-          <text x="510" y="45" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff">:Backend (NestJS)</text>
+          <text x="510" y="45" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff">:Supabase Auth</text>
 
           <rect x="630" y="20" width="140" height="40" rx="6" fill="#15803d" stroke="#166534"/>
-          <text x="700" y="45" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff">:Supabase Auth</text>
+          <text x="700" y="45" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff">:PostgreSQL (users)</text>
 
           <!-- Flechas de mensajes -->
           <!-- 1 -->
-          <line x1="100" y1="90" x2="295" y2="90" stroke="#1e293b" stroke-width="1.8"/>
-          <polygon points="295,90 285,85 285,95" fill="#1e293b"/>
-          <text x="195" y="82" text-anchor="middle" font-family="sans-serif" font-size="10.5">1: SolicitarLogin(teléfono)</text>
+          <line x1="100" y1="95" x2="295" y2="95" stroke="#1e293b" stroke-width="1.8"/>
+          <polygon points="295,95 285,90 285,100" fill="#1e293b"/>
+          <text x="195" y="87" text-anchor="middle" font-family="sans-serif" font-size="10.5">1: SubmitRegistro(nombre, email, password)</text>
 
           <!-- 2 -->
-          <line x1="300" y1="120" x2="505" y2="120" stroke="#1e293b" stroke-width="1.8"/>
-          <polygon points="505,120 495,115 495,125" fill="#1e293b"/>
-          <text x="400" y="112" text-anchor="middle" font-family="sans-serif" font-size="10.5">2: POST /auth/otp/send</text>
+          <line x1="300" y1="135" x2="505" y2="135" stroke="#1e293b" stroke-width="1.8"/>
+          <polygon points="505,135 495,130 495,140" fill="#1e293b"/>
+          <text x="400" y="127" text-anchor="middle" font-family="sans-serif" font-size="10.5">2: signUp(email, password, { full_name })</text>
 
           <!-- 3 -->
-          <line x1="510" y1="150" x2="695" y2="150" stroke="#1e293b" stroke-width="1.8"/>
-          <polygon points="695,150 685,145 685,155" fill="#1e293b"/>
-          <text x="605" y="142" text-anchor="middle" font-family="sans-serif" font-size="10.5">3: signInWithOtp(phone)</text>
+          <line x1="510" y1="175" x2="695" y2="175" stroke="#1e293b" stroke-width="1.8"/>
+          <polygon points="695,175 685,170 685,180" fill="#1e293b"/>
+          <text x="605" y="167" text-anchor="middle" font-family="sans-serif" font-size="10.5">3: Trigger handle_new_user()</text>
 
-          <!-- 4 (SMS hacia usuario) -->
-          <line x1="700" y1="180" x2="105" y2="180" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5 3"/>
-          <polygon points="105,180 115,175 115,185" fill="#2563eb"/>
-          <text x="400" y="174" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#2563eb">4: Envío de SMS con código OTP de 6 dígitos</text>
+          <!-- 4 -->
+          <line x1="700" y1="215" x2="515" y2="215" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <polygon points="515,215 525,210 525,220" fill="#15803d"/>
+          <text x="605" y="207" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#15803d">4: INSERT INTO usuarios OK</text>
 
           <!-- 5 -->
-          <line x1="100" y1="220" x2="295" y2="220" stroke="#1e293b" stroke-width="1.8"/>
-          <polygon points="295,220 285,215 285,225" fill="#1e293b"/>
-          <text x="195" y="212" text-anchor="middle" font-family="sans-serif" font-size="10.5">5: IngresarCodigo(otp)</text>
+          <line x1="510" y1="255" x2="305" y2="255" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <polygon points="305,255 315,250 315,260" fill="#15803d"/>
+          <text x="400" y="247" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#15803d">5: Session Created (JWT + User Profile)</text>
 
           <!-- 6 -->
-          <line x1="300" y1="250" x2="505" y2="250" stroke="#1e293b" stroke-width="1.8"/>
-          <polygon points="505,250 495,245 495,255" fill="#1e293b"/>
-          <text x="400" y="242" text-anchor="middle" font-family="sans-serif" font-size="10.5">6: POST /auth/otp/verify</text>
+          <line x1="300" y1="295" x2="105" y2="295" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <polygon points="105,295 115,290 115,300" fill="#15803d"/>
+          <text x="195" y="287" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#15803d">6: Set-Cookie(auth_token) + Redirect</text>
 
           <!-- 7 -->
-          <line x1="510" y1="280" x2="695" y2="280" stroke="#1e293b" stroke-width="1.8"/>
-          <polygon points="695,280 685,275 685,285" fill="#1e293b"/>
-          <text x="605" y="272" text-anchor="middle" font-family="sans-serif" font-size="10.5">7: verifyOtp(token)</text>
-
-          <!-- 8 -->
-          <line x1="700" y1="310" x2="515" y2="310" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3"/>
-          <polygon points="515,310 525,305 525,315" fill="#15803d"/>
-          <text x="605" y="302" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#15803d">8: Session(JWT + User)</text>
-
-          <!-- 9 -->
-          <line x1="510" y1="340" x2="305" y2="340" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3"/>
-          <polygon points="305,340 315,335 315,345" fill="#15803d"/>
-          <text x="400" y="332" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#15803d">9: Set-Cookie(auth_token)</text>
-
-          <!-- 10 -->
-          <line x1="300" y1="370" x2="105" y2="370" stroke="#15803d" stroke-width="1.5" stroke-dasharray="5 3"/>
-          <polygon points="105,370 115,365 115,375" fill="#15803d"/>
-          <text x="195" y="362" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#15803d">10: Redirección autorizada al Panel</text>
+          <rect x="50" y="325" width="230" height="25" rx="4" fill="#eff6ff" stroke="#3b82f6"/>
+          <text x="165" y="342" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="600" fill="#1e3a8a">Acceso directo concedido al Panel</text>
         </svg>
       </div>
-      <div class="figure-caption">Figura 2. Diagrama de Secuencia: Alta de Cuenta y Verificación OTP [Fuente propia].</div>
+      <div class="figure-caption">Figura 2. Diagrama de Secuencia: Alta de Cuenta y Autenticación Directa [Fuente propia].</div>
 
       <h3 class="sub-section-title">2.5.2 Secuencia: Creación de Unidad y Validación de Cupo</h3>
       <p>
@@ -1889,7 +1872,7 @@
           <text x="165" y="392" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-weight="600" fill="#0f172a">PostgreSQL + Row Level Security</text>
 
           <rect x="290" y="365" width="180" height="45" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
-          <text x="380" y="392" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-weight="600" fill="#0f172a">Supabase Auth (OTP SMS/Mail)</text>
+          <text x="380" y="392" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-weight="600" fill="#0f172a">Supabase Auth (Sesiones JWT)</text>
 
           <rect x="500" y="365" width="130" height="45" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
           <text x="565" y="392" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-weight="600" fill="#0f172a">Storage (Fotos / PDF)</text>
@@ -2021,7 +2004,7 @@
               <td><code>id</code></td>
               <td>UUID</td>
               <td>PK, REFERENCES auth.users</td>
-              <td>Perfil central del usuario registrado vía OTP SMS/Email.</td>
+              <td>Perfil central del usuario registrado con credenciales seguras.</td>
             </tr>
             <tr>
               <td><code>unidades</code></td>
@@ -2089,7 +2072,7 @@
         En cumplimiento de la regla de verificación exhaustiva del proyecto, los flujos críticos fueron validados mediante una suite de pruebas End-to-End implementada en <strong>Playwright</strong> dentro del directorio <code>apps/web/e2e/</code>. Las pruebas se ejecutan contra navegadores reales y cubren:
       </p>
       <ul class="academic-list">
-        <li><strong>Flujo de Autenticación (`auth.spec.ts`):</strong> Validación de solicitud de código OTP, redirección post-login y aislamiento de sesiones concurrentes.</li>
+        <li><strong>Flujo de Autenticación (`auth.spec.ts`):</strong> Validación de rutas protegidas, redirección post-login y aislamiento de sesiones concurrentes.</li>
         <li><strong>Flujo del Gestor (`gestor.spec.ts`):</strong> Creación de Unidades, subida de imágenes, asignación de modalidades de precio y validación del límite de Cupo.</li>
         <li><strong>Flujo del Marketplace (`marketplace.spec.ts`):</strong> Ejecución del wizard de 3 pasos, filtrado por zona de Goya, verificación de geolocalización difusa (pin aproximado) y activación de enlace `wa.me` de WhatsApp.</li>
         <li><strong>Suite Integral QA (`qa_suite.spec.ts`):</strong> Cooldown de 15 días tras archivado, aislamiento por RLS entre Gestores y delegación restringida.</li>
@@ -2140,7 +2123,7 @@
             <tr>
               <td><code>auth.spec.ts</code></td>
               <td>4 tests</td>
-              <td>Envío de OTP SMS, token inválido rechazado, redirección al panel tras login.</td>
+              <td>Validación de login/registro, control de rutas protegidas, redirección al panel tras login.</td>
               <td><strong style="color: var(--success);">APROBADO (100%)</strong></td>
             </tr>
             <tr>
