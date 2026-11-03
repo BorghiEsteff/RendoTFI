@@ -1,10 +1,14 @@
+# Target future API contract (spec 003), distinct from the already implemented
+# Beta projection endpoint. D1 2026-11-03 supersedes all Seña-gated blocking models.
 openapi: 3.1.0
 info:
   title: Rendo Modality-Aware Availability
   version: 0.1.0
   description: >
     Contract for public availability projection and authenticated operational
-    availability. Public responses deliberately omit operational identities and reasons.
+    availability. D1 approved 2026-11-03: every registered rental blocks,
+    independent of Seña; published listings remain visible with a current rented-until
+    notice. Public responses deliberately omit operational identities and reasons.
 servers:
   - url: /api
 
@@ -554,7 +558,7 @@ components:
           format: uuid
         origin:
           type: string
-          enum: [sena, mantenimiento, uso_privado]
+          enum: [alquiler, mantenimiento, uso_privado]
         precision:
           $ref: '#/components/schemas/Precision'
         start:
