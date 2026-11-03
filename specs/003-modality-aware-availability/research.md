@@ -1,3 +1,5 @@
+> **Decisión actualizada D1 (2026-11-03):** La antigua propuesta que condicionaba la ocupación al cobro de Seña queda sustituida. El Alquiler registrado es el origen del bloqueo; el aviso sigue público. Esta investigación conserva otras decisiones que aún deben implementarse.
+
 # Phase 0 Research: Modality-Aware Availability
 
 ## Repository findings
@@ -71,7 +73,7 @@ rented. Snapshotting the applied buffer prevents later rule changes from rewriti
 - Evaluate the current buffer dynamically: rejected because changing a rule would retroactively
   alter conflict behavior without an auditable migration.
 
-## Decision 4: Transactional database functions own Alquiler/Seña/block changes
+## Decision 4: Transactional database functions own Alquiler/occupancy-block changes
 
 **Decision**: Use narrowly granted PostgreSQL functions for create/update/cancel/refund/soft-delete
 operations that can affect an Availability Block. Operational functions run as SECURITY INVOKER
@@ -84,10 +86,10 @@ write the Alquiler lifecycle and mutate its block atomically.
 
 **Alternatives considered**:
 
-- NestJS compensation after two writes: rejected because a crash can leave Seña and block out of
+- NestJS compensation after two writes: rejected because a crash can leave Alquiler and its block out of
   sync.
-- Database trigger on every Alquiler update: rejected because not every payment-state change means
-  an effective optional Seña, and explicit commands produce clearer authorization/error behavior.
+- Database trigger on every Alquiler update: evaluate against a narrowly scoped atomic operation;
+  payment-only updates must never change occupancy.
 - Service-role writes from NestJS: rejected for user operations because they bypass RLS.
 
 **Primary references**:
@@ -97,23 +99,13 @@ write the Alquiler lifecycle and mutate its block atomically.
 - Supabase grants and RLS:
   <https://supabase.com/docs/guides/api/securing-your-api>
 
-## Decision 5: Seña gets an explicit lifecycle marker
+## Decision 5 (superseded 2026-11-03): Registro de Alquiler origina ocupación
 
-**Decision**: Extend Alquiler with an explicit Seña lifecycle (sin_sena, pendiente, cobrada,
-reintegrada) plus actor/time audit fields. Automatic blocking begins only on the transition to
-cobrada with a positive amount. Moving later to fully paid does not erase the fact that the Seña was
-effective. Reintegrating the Seña, cancelling or soft-deleting the Alquiler releases the block
-atomically and retains its row/history.
+**D1 aprobado:** Un Alquiler no cancelado/no eliminado reserva inmediatamente todo el intervalo desde su registro, sin importar si existe una Seña, depósito o cobro. El cobro o reintegro de Seña no libera el período. Los bloqueos deben cambiar al modificar o cancelar el Alquiler, de manera atómica y auditable.
 
-**Rationale**: Current estado_pago cannot answer whether a fully paid Alquiler previously had a
-collected Seña. Inferring from amount alone would violate the clarification that Seña is optional
-and pending/omitted values do not block.
+**Razón:** el contrato registrado ya representa un compromiso de uso; esperar una seña expone la unidad a sobrerreservas. La Seña puede mantener su propio historial financiero, pero no gobierna la disponibilidad.
 
-**Alternatives considered**:
-
-- Treat monto_sena greater than zero as effective: rejected by the accepted clarification.
-- Treat estado_pago cobrado_total as Seña: rejected because full payment can occur without Seña.
-- Delete a released block: rejected because the feature requires audit history and borrado lógico.
+**Alternativas descartadas:** bloquear solo al recaudar Seña, deducir confirmación desde monto_sena, despublicar la unidad al alquilarla, eliminar la historia al cancelar.
 
 ## Decision 6: Explicit Grupo inheritance with Unidad precedence
 
@@ -187,19 +179,9 @@ fetches on detail avoids an N+1 query on marketplace lists.
 
 ## Decision 10: Historical records use a review gate
 
-**Decision**: Backfill automatically only when modality, period and effective Seña are unambiguous.
-All ambiguous existing Alquileres produce a retained review item, and the affected Unidad's public
-availability remains unknown until a Gestor resolves it. The migration emits counts and IDs for
-verification; it never assumes ambiguous periods are free.
+**D1 (2026-11-03):** Todos los Alquileres históricos no cancelados, no eliminados y con intervalos válidos bloquean sus períodos, independientemente de Seña. Solo registros con fechas, asociación de Unidad o huso horario irresolubles requieren revisión. La migración de nuevas tablas de bloqueo debe reconciliar automáticamente la historia válida sin borrar contratos ni inferir fechas. La proyección actual se basa directamente en `public.alquileres`.
 
-**Rationale**: Existing records lack modality and hourly precision. Silent conversion would create
-false availability or incorrect blocks.
-
-**Alternatives considered**:
-
-- Ignore old rows: rejected by the specification.
-- Block every historical Alquiler regardless of Seña: rejected by the optional-Seña rule.
-- Guess the first modality: rejected because Unidades can have multiple modalities.
+**Alternativas descartadas:** ignorar Alquileres viejos; requerir comprobante de Seña para considerar ocupados intervalos contractuales; inferir modalidad arbitrariamente.
 
 ## Decision 11: Delegado authorization is a prerequisite, not duplicated scope
 
