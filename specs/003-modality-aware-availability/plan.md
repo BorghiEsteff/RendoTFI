@@ -1,3 +1,5 @@
+> **Approved D1 (2026-11-03):** All registered Alquileres reserve their intervals regardless of Seña; published units stay public with a current-occupation end-date notice. Previous Seña-gated descriptions are superseded.
+
 # Implementation Plan: Modality-Aware Availability
 
 **Branch**: `003-modality-aware-availability` | **Date**: 2026-09-25 | **Spec**: [spec.md](./spec.md)
@@ -9,8 +11,8 @@
 Add authoritative calendar availability without changing the manual `Unidad.estado`. PostgreSQL
 stores one global, half-open blocked timeline per physical Unidad and rejects overlaps with a GiST
 exclusion constraint. Monthly and daily inputs retain local-date semantics; hourly inputs retain
-exact instants and an IANA timezone. A collected optional Seña creates or updates its block in the
-same database transaction as the Alquiler change. Manual maintenance/private-use blocks use the
+exact instants and an IANA timezone. Every registered Alquiler creates/updates its block in the
+same database transaction as the Alquiler change, independent of optional Seña payment. Manual maintenance/private-use blocks use the
 same conflict path.
 
 Hourly operating rules are effective per Unidad. A Unidad can explicitly inherit an enabled Grupo
@@ -159,7 +161,7 @@ duration, buffer snapshots, RLS-aware persistence and conflict translation remai
 4. `createOrReleaseManualBlock(actor, command)`
 
 Alquiler creation/update keeps its existing module interface but changes persistence to one atomic
-database function that owns the Seña/block lifecycle. Tests exercise the HTTP/module interfaces,
+database function that owns the Alquiler/occupancy lifecycle. Tests exercise the HTTP/module interfaces,
 not private normalization helpers.
 
 ### Data authority and concurrency
@@ -170,7 +172,7 @@ not private normalization helpers.
   positive overlap, including concurrent requests and cross-modality attempts.
 - Monthly/daily local dates are converted at the effective IANA timezone before persistence but are
   also retained as local input values for faithful display/audit.
-- Database functions perform Alquiler + effective-Seña + block changes atomically. NestJS never
+- Database functions perform Alquiler + occupancy-block changes atomically, with optional Seña separate. NestJS never
   attempts a read-then-write overlap check as the authority.
 - Resilient/demo storage is forbidden for authoritative availability mutations and public claims.
   Database failure maps to an explicit 503/unknown state.
@@ -192,10 +194,10 @@ not private normalization helpers.
 1. Add enums, rule tables, block table, `btree_gist`, indexes, grants, RLS and database functions.
 2. Extend Alquiler with `modalidad_precio_id`, hourly instant/timezone fields and an auditable Seña
    lifecycle marker; preserve legacy date columns for date-based records.
-3. Generate a deterministic backfill report. Auto-create blocks only for records that are
-   unambiguous (`monto_sena > 0`, collected Seña marker inferable, valid Unidad/period, one compatible
-   modality). Mark every other affected Unidad `pendiente_revision`; public availability stays
-   `unknown` until reviewed.
+3. Generate a deterministic backfill report. All non-cancelled, non-deleted Alquileres with valid
+   intervals must reserve their periods irrespective of `monto_sena` or `estado_pago`. Flag only
+   invalid/ambiguous historical dates, timezones or Unidad associations for `pendiente_revision`;
+   public availability remains unknown until unresolved cases are reviewed.
 4. Deploy API reads first, then operational mutations, then web controls. Keep the public calendar
    disabled for an individual Unidad until its configuration/backfill status is active.
 5. Roll back application exposure by feature flag if needed; never drop block/history columns in a
@@ -204,11 +206,11 @@ not private normalization helpers.
 ## Verification Strategy
 
 - Database: half-open boundary, all overlap shapes, mixed modalities, buffers, concurrent inserts,
-  group inheritance/override, group-change validation, atomic Seña transitions, release history,
+  group inheritance/override, group-change validation, rental occupancy transitions, release history,
   RLS actor matrix and public-function output.
 - API: DTO unions, error mapping (400/403/404/409/422/503), no resilient fallback, tenant isolation,
   bounded windows and zero private fields in public responses.
-- Web: modality-driven inputs, optional Seña behavior, inherited/override indicators, manual blocks,
+- Web: modality-driven inputs, Seña-independent occupancy, inherited/override indicators, manual blocks,
   unknown/loading/error/empty/conflict states, keyboard/focus/touch targets and localized public copy.
 - Visual: Playwright screenshots for every affected state at 375, 768, 1024 and 1440 pixels in light
   and dark themes; responsive and desktop results reported separately.
