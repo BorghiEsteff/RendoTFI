@@ -362,9 +362,9 @@ export default async function UnidadDetailPage({
             </div>
 
             {/* Aceternity Animated Tabs */}
-            <AnimatedTabs tabs={detailTabs} defaultValue="descripcion" />
-
             <DisponibilidadPublica unidadId={id} locale={locale} />
+
+            <AnimatedTabs tabs={detailTabs} defaultValue="descripcion" />
 
             <hr className="border-border/60" />
 
