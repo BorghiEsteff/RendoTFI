@@ -1,3 +1,5 @@
+> **D1 aprobada (2026-11-03):** El alquiler registrado bloquea desde el alta aun sin Seña. La Unidad sigue publicada, con un aviso de finalización si está alquilada actualmente.
+
 # UI Contract: Modality-Aware Availability
 
 ## Design intent
@@ -33,9 +35,8 @@ Android is not certified by these captures.
    checkout/end label and minimum duration.
 3. Selecting an hourly modality shows date, start/end time, timezone label, operating hours and
    turnaround information.
-4. Seña is visibly optional. Choosing no Seña or pending Seña states that no automatic calendar
-   block will be created.
-5. Marking Seña collected requires a positive amount and states that the period will be blocked.
+4. Seña is visibly optional; every saved Alquiler immediately blocks its exact period, even without Seña.
+5. Collecting or refunding Seña affects money, never the already registered occupancy.
 6. Conflict response preserves all entered fields, moves focus to the error summary and provides a
    route/action to inspect the operational calendar.
 7. Database unavailable prevents submission and never reports success through demo data.
@@ -47,8 +48,8 @@ Android is not certified by these captures.
 | ALQ-MONTH | Monthly modality, valid minimum period |
 | ALQ-DAY | Daily modality, arrival/departure period |
 | ALQ-HOUR | Hourly modality with schedule and buffer |
-| ALQ-NO-SENA | Optional Seña omitted; no automatic-block explanation |
-| ALQ-SENA | Positive Seña marked collected; block explanation |
+| ALQ-NO-SENA | Optional Seña omitted; confirm Alquiler blocks from registration |
+| ALQ-SENA | Seña collected; same occupancy as without Seña |
 | ALQ-CONFLICT | 409 overlap error with preserved values/focus |
 | ALQ-UNKNOWN | Rule/backfill pending; submission requiring availability is prevented |
 | ALQ-ERROR | 503 retryable authoritative-service failure |
@@ -67,7 +68,7 @@ Android is not certified by these captures.
   effective schedule. Delegado ver can inspect but cannot edit.
 - Weekly editor supports multiple intervals per day, closed days, valid ordering and no overlap.
 - Buffer is an integer-minute field with explanatory copy.
-- Operational calendar shows Seña blocks and private/manual blocks with private labels only here.
+- Operational calendar shows registered-Alquiler occupancy and private/manual blocks with private labels only here.
 - Manual block dialog supports maintenance/private use and requires a private reason.
 - Group move or rule change that invalidates future blocks shows all affected Unidad names/counts
   without partially applying the change.
@@ -129,6 +130,9 @@ Android is not certified by these captures.
   claim.
 - 503 shows localized retry. It never converts to available.
 - Anonymous and authenticated renders contain the same calendar fields.
+- A currently rented published unit prominently shows «Esta unidad se encuentra alquilada hasta el X» with local date/time.
+- Contiguous consecutive Alquileres extend the advertised end; future-only bookings do not trigger a current-occupation notice.
+- The unit stays published/searchable during an Alquiler; never infer free from missing blocks before operating rules exist.
 
 ### States to verify
 
@@ -141,6 +145,10 @@ Android is not certified by these captures.
 | PUBLIC-UNKNOWN | Not configured/backfill pending |
 | PUBLIC-ERROR | Retryable 503 |
 | PUBLIC-PRIVACY | Anonymous/authenticated payload and visible copy contain no private data |
+| PUBLIC-RENTED-NOW | Published unit with a current Alquiler shows rented-until banner (ES/PT/EN) |
+| PUBLIC-FUTURE-ONLY | Future booking appears on calendar, not as rented now |
+| PUBLIC-ADJACENT | Back-to-back rentals show end of continuous occupancy |
+| PUBLIC-EXPIRED | Expired rental removes current-occupation banner |
 
 ## Surface 5: Marketplace card
 
