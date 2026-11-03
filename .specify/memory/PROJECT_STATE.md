@@ -30,3 +30,11 @@
 - Proyección segura y limitada de ocupaciones (SQL RPC + API pública/autenticada); calendario público orientativo; consulta previa en wizard; error concurrente `23P01` mapeado a 409.
 - Documento de alcance, hallazgos y pruebas en `specs/003-modality-aware-availability/evidence/2026-11-02-audit-and-projection.md`.
 - Pendientes: configurar cierres manuales, horarios, buffer e herencia por grupos, calendario operativo completo, ejecutar Vitest/Playwright y aceptación funcional con cuentas reales. No presentar ausencia de reservas como disponibilidad garantizada.
+
+## Decisión 2026-11-03 — REN-DISP-D1 bloqueo y aviso público
+
+- Propietario confirma: **todo Alquiler registrado, no cancelado y no eliminado, bloquea inmediatamente su intervalo aunque no haya Seña cobrada**, entre todas las modalidades de la Unidad. Se preserva la exclusión GiST ya probada.
+- Una Unidad `publicada` **permanece publicada** durante un alquiler. En el detalle público aparece «Esta unidad se encuentra alquilada hasta el [fecha/hora]» solo si está ocupada al momento de consultar; fechas futuras permanecen en el calendario. Alquileres consecutivos prolongan el tramo mostrado.
+- Documentación sincronizada: `specs/003-modality-aware-availability/spec.md`, `data-model.md`, `plan.md`, `quickstart.md`, `research.md`, contratos y `docs/architecture/ADR-REN-DISP-02-alquiler-bloquea-publicacion-permanece.md`.
+- Nuevo helper de ocupación pública en `apps/web/src/lib/public-occupancy.ts` y aviso visual en `DisponibilidadPublica.tsx`; casos de pruebas escritos en `apps/web/e2e/public_rented_until_notice.spec.ts` (ejecución de Playwright **NO ACREDITADA**).
+- Validado en SQL Beta bajo transacción revertida: una reserva sin Seña impide el solapamiento por GiST y la Unidad conserva estado `publicada`; consulta anónima expone ocupaciones sin datos privados. Ninguna reserva nueva fue creada. No GitHub Actions.
