@@ -1,3 +1,5 @@
+> **Approved D1 (2026-11-03):** Registered Alquiler occupancy is independent of Seña collection. This overrides older Seña-gated examples in the historical feature plan.
+
 # Validation Quickstart: Modality-Aware Availability
 
 This guide validates the completed feature. It is not implementation evidence by itself.
@@ -86,7 +88,7 @@ Expected:
 - A Grupo update that invalidates any inheriting future block fails entirely.
 - Moving a Unidad between Grupos validates the prospective effective rule before changing grupo_id.
 
-### C. Optional Seña
+### C. Registered Alquiler with optional Seña (D1 approved 2026-11-03)
 
 Create Alquileres in these states:
 
@@ -98,11 +100,12 @@ Create Alquileres in these states:
 
 Expected:
 
-- Only the effective collected-Seña cases create an automatic block.
-- Fully paying a Seña-backed Alquiler keeps its block.
-- Fully paying an Alquiler that never had a Seña creates no automatic block.
-- Reintegrating Seña, cancelling or soft-deleting releases the block and retains audit history.
-- A conflict fails both Seña transition and block creation; neither partial change persists.
+- All registered non-cancelled Alquileres block their intervals, **including without paid Seña**.
+- Fully paying or collecting/refunding optional Seña does not alter the reserved interval.
+- Cancelling or soft-deleting Alquiler releases its interval and retains audit history.
+- A conflicting Alquiler create/update fails atomically, leaving the previous reservations unchanged.
+- A published unit with an ongoing booking shows a localized 'alquilada hasta' notice, but stays published.
+- A future-only booking never triggers an ongoing-occupation banner.
 - Unidad.estado is byte-for-byte unchanged in all cases.
 
 ### D. Backfill
