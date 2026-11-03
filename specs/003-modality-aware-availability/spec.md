@@ -4,18 +4,29 @@
 
 **Created**: 2026-09-25
 
-**Status**: Clarified and ready for planning
+**Status**: Decisión D1 confirmada el 2026-11-03. Implementación parcial en Beta; fases de bloqueos manuales y reglas operativas pendientes
 
 **Input**: User description: "Rental availability varies by case: a monthly rental is not the same
 as a daily rental or an hourly rental such as a sports court, so each case must be evaluated
 individually."
+
+## Decisión definitiva D1 — 2026-11-03 (prevalece sobre aclaraciones de septiembre)
+
+El propietario del producto confirmó expresamente: **cada Alquiler registrado, no cancelado y no eliminado, bloquea de inmediato el intervalo completo [inicio_at, fin_at), aunque no tenga Seña pagada**. Esto aplica por hora, por día, por semanas y por mes, con una única línea de ocupación por Unidad física, independientemente de la modalidad. La confirmación contractual del Alquiler es el registro; no se exige un paso de confirmación o cobro adicional para bloquear.
+
+- Registrar, mover, extender y cancelar/liberar un Alquiler debe mantener el calendario coherente y respetar la exclusión GiST existente. Un cobro, no cobro, reembolso o anulación de Seña **no** libera la Unidad por sí mismo.
+- **Unidad.estado permanece independiente**: una Unidad `publicada` sigue visible y públicamente consultable durante el Alquiler. No pasa automáticamente a `no_disponible`, `pausada` ni `archivada`.
+- Si el instante actual pertenece a un intervalo vigente, el aviso público **«Esta unidad se encuentra alquilada hasta el [fecha/hora de finalización]»** aparece de forma destacada, en español, inglés y portugués, con zona horaria `America/Argentina/Buenos_Aires`. Las horas se muestran cuando sean relevantes. Los Alquileres consecutivos, sin espacio libre, deben anunciar la terminación del tramo continuo.
+- Los Alquileres solo futuros se marcan en el calendario, **sin** afirmar que la Unidad está alquilada ahora. Una vez terminado un intervalo, desaparece el aviso de ocupación actual; el anuncio sigue público.
+- El calendario público no expone identidad del Inquilino, IDs de contrato, pagos, señas ni referencias de gestión.
+- En la etapa parcial vigente, ausencia de ocupaciones significa solo «sin reservas registradas» y **no** disponibilidad confirmada: todavía no existen cierres por mantenimiento, horario semanal ni buffer entre turnos.
 
 ## Clarifications
 
 ### Session 2026-09-25
 
 - Q: Si una misma Unidad ofrece modalidades mensual, diaria y por hora, ¿un bloqueo confirmado en cualquiera debe impedir períodos superpuestos en todas las demás modalidades? → A: Sí. La ocupación es global para la Unidad física; recursos utilizables en paralelo se modelan como Unidades distintas dentro de un Grupo.
-- Q: ¿En qué momento debe comenzar el bloqueo de disponibilidad asociado a una Seña? → A: Solo cuando la Seña opcional haya sido registrada como efectivamente cobrada por el Gestor o Delegado. Informar un monto propuesto, mantenerla pendiente u omitir la Seña no crea un bloqueo automático.
+- Q: ¿En qué momento debe comenzar el bloqueo de disponibilidad asociado a una Seña? → A HISTÓRICA (SUSTITUIDA el 2026-11-03): el bloqueo se vinculaba al cobro de la Seña. **Regla vigente:** el Alquiler se bloquea desde su registro, aun sin Seña.
 - Q: ¿Dónde deben configurarse los horarios habilitados y el tiempo de separación entre turnos para alquileres por hora? → A: Por Unidad, con la opción explícita de definir una configuración común en el Grupo para que sus Unidades la hereden. Cada Unidad puede mantener una excepción propia, que prevalece sobre la regla del Grupo.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -26,7 +37,7 @@ As a Gestor, I need availability rules that match each Modalidad de precio so th
 a nightly/day-based stay, and an hourly court are not forced into one inaccurate calendar model.
 
 **Why this priority**: Availability is the foundation for preventing overlaps and for deciding what
-a Seña blocks. A wrong shared model would corrupt both operational and public behavior.
+a registered Alquiler blocks, regardless of Seña. A wrong shared model would corrupt both operational and public behavior.
 
 **Independent Test**: Configure representative monthly, daily, and hourly Unidades, create valid
 availability blocks for each, and verify that each modality uses its own required precision and
@@ -34,13 +45,13 @@ boundary rules without changing the Unidad's manual general state.
 
 **Acceptance Scenarios**:
 
-1. **Given** a monthly modality, **When** the Gestor records an Alquiler and a collected Seña,
+1. **Given** a monthly modality, **When** the Gestor records a non-cancelled Alquiler,
    **Then** the exact long-term local-date period becomes unavailable without changing
    `Unidad.estado`.
-2. **Given** a daily modality, **When** the Gestor records a stay and a collected Seña, **Then** the
+2. **Given** a daily modality, **When** the Gestor records a non-cancelled stay, **Then** the
    occupied nights/days follow explicit arrival/departure boundaries and adjacent non-overlapping
    stays remain possible.
-3. **Given** an hourly modality, **When** the Gestor records a turn and a collected Seña, **Then** the
+3. **Given** an hourly modality, **When** the Gestor records a non-cancelled turn, **Then** the
    exact local start/end times are blocked and adjacent valid turns remain possible.
 4. **Given** a modality whose minimum duration is greater than one unit, **When** a period is
    entered, **Then** it is rejected unless it meets the modality's `cantidad_tiempo` minimum.
@@ -75,32 +86,20 @@ periods are accepted.
 
 ---
 
-### User Story 3 - Block Dates Only for an Effective Seña (Priority: P1)
+### User Story 3 - Block From Registration, Independent of Seña (Priority: P1)
 
-As a Gestor, I need calendar blocking to occur at the correct Seña lifecycle moment so that merely
-typing an expected amount does not falsely remove availability, while a real commitment is never
-left exposed.
+As a Gestor, I need every saved Alquiler to reserve its exact period immediately, even without a paid Seña, so the same physical Unidad cannot be committed twice. The unit listing must remain public.
 
-**Why this priority**: Current records separate `monto_sena` from payment status. The trigger must
-represent a real business commitment and be reversible through defined actions.
-
-**Independent Test**: Move an Alquiler through pending, Seña-effective, date-extension,
-cancellation/refund, and soft-deletion scenarios and verify the availability block appears, changes,
-or closes exactly once at the specified lifecycle points.
+**Independent Test**: create Alquileres with no Seña, pending Seña, collected Seña and total payment. All reserve their exact period upon registration. Change payment status or refund Seña; the reservation must remain blocked. Cancel or soft-delete: release for new reservations while retaining rental audit history. Unidad.estado remains unchanged.
 
 **Acceptance Scenarios**:
 
-1. **Given** an Alquiler with an omitted, proposed, or pending Seña, **When** no authorized Gestor or
-   Delegado has marked that optional Seña as effectively collected, **Then** its period creates no
-   automatic availability block; an authorized actor may still create a separate auditable manual
-   block when operationally required.
-2. **Given** a Seña that becomes effective, **When** its transaction commits, **Then** the matching
-   availability block is created or activated atomically.
-3. **Given** dates of a Seña-backed Alquiler are extended, **When** the update would overlap another
-   block, **Then** the entire update fails and the old block remains unchanged.
-4. **Given** a Seña-backed Alquiler is cancelled, refunded, or soft-deleted, **When** the defined
-   release action completes, **Then** the block is released or retained according to an auditable
-   lifecycle rule rather than silently deleted.
+1. **Given** no paid Seña, **When** an Alquiler is saved, **Then** the full interval immediately blocks further overlapping bookings.
+2. **Given** a Seña is collected, refunded or absent, **When** financial information changes, **Then** the booking interval remains unchanged.
+3. **Given** an existing Alquiler, **When** its dates extend into another reserved period, **Then** the update fails atomically and the old period stays blocked.
+4. **Given** a cancelled or soft-deleted Alquiler, **When** the operation commits, **Then** the old interval no longer blocks future bookings; its historical record remains auditable.
+5. **Given** a published unit currently rented, **When** the public listing loads, **Then** a localized notice accurately states the current rental end date/time without removing the listing from search.
+6. **Given** only a future reservation, **When** public availability loads, **Then** the page shows it as future occupancy but does not claim the unit is currently rented.
 
 ---
 
@@ -136,7 +135,7 @@ contain no private identifiers or financial data.
 - Daily and monthly date periods use half-open boundaries (`inicio` included, `fin` excluded) so an
   outgoing and incoming occupation can share a boundary without overlap.
 - Hourly periods use half-open timestamp boundaries and must have positive duration.
-- Manual maintenance/private-use blocks can coexist with Alquiler/Seña blocks and participate in
+- Manual maintenance/private-use blocks can coexist with Alquiler blocks and participate in
   the same overlap protection without exposing their reason publicly.
 - Existing records created before availability blocks exist require an explicit backfill/reporting
   disposition; they are not silently assumed free.
@@ -176,14 +175,15 @@ contain no private identifiers or financial data.
 - **FR-007a**: All availability blocks for a Unidad MUST conflict globally regardless of the
   Modalidad de precio used to create them; physically independent resources MUST be represented as
   separate Unidades and MAY be organized under one Grupo.
-- **FR-008**: A Seña MUST remain optional. Only an authorized Gestor or Delegado marking it as
-  effectively collected MUST create or activate its availability block; an omitted Seña, a proposed
-  amount, or a pending/non-effective Seña MUST NOT create an automatic block. The effective-Seña
-  transition and its availability block mutation MUST commit atomically or both fail.
+- **FR-008**: Every non-cancelled, non-soft-deleted Alquiler MUST block its complete interval as soon
+  as it is registered, regardless of optional Seña, deposit or estado_pago. Financial movements alone
+  MUST NOT create, release or alter occupancy; changing/cancelling the Alquiler does so atomically.
+  The Unidad's public/manual estado MUST NOT be automatically changed.
 - **FR-009**: Extending or changing a blocked Alquiler period MUST preserve the previous valid state
   if the replacement conflicts or fails.
-- **FR-010**: Cancellation, refund, soft deletion, and manual release MUST have explicit auditable
-  outcomes; no historical block may disappear without trace.
+- **FR-010**: Rental cancellation, soft deletion and future manual-block release MUST have explicit
+  auditable outcomes; refunding Seña alone MUST NOT release occupancy. No historical Alquiler or
+  future operational block may disappear without trace.
 - **FR-011**: Gestores and appropriately authorized Delegados MUST be able to create manual
   maintenance/private-use blocks within their permitted scope.
 - **FR-012**: Public availability MUST disclose no Gestor-private, Inquilino, payment, Seña amount,
@@ -192,6 +192,10 @@ contain no private identifiers or financial data.
   availability is absent or unavailable; random or optimistic availability is forbidden.
 - **FR-014**: UI interactions and labels MUST adapt to modality: long-period date range, daily/night
   range, or hourly slots, with ES/PT/EN localization on public surfaces.
+- **FR-014a**: A published Unidad MUST remain public while any Alquiler is active. If currently
+  occupied, show a localized public notice with the exact date/time the continuous occupancy ends,
+  in America/Argentina/Buenos_Aires, without private rental data. Future-only reservations MUST
+  NOT trigger a current-occupation notice. Missing/error/partial data MUST NOT assert availability.
 - **FR-015**: Automated tests MUST cover each modality independently, every overlap shape,
   boundaries, minimum duration, concurrency, lifecycle updates/releases, tenant isolation, public
   privacy, and the invariant that Unidad state remains unchanged.
@@ -203,16 +207,15 @@ contain no private identifiers or financial data.
 
 - **Modalidad de precio**: Existing commercial option on a Unidad, defined by `unidad_tiempo`,
   `cantidad_tiempo`, and `precio`; it informs minimum duration but is not itself an occupancy record.
-- **Availability Block**: A non-overlapping occupied period for one physical Unidad, sourced from an
-  effective Seña, manual maintenance/private use, or another explicitly supported cause.
+- **Availability Block**: A non-overlapping occupied period for one physical Unidad, sourced from
+  every registered Alquiler or from future manual maintenance/private-use blocks.
 - **Availability Rule**: The precision, timezone, minimum duration, operating schedule, and buffer
   rules used when validating a block. Hourly schedule and buffer are effective per Unidad and may
   be inherited from its Grupo; the Grupo supplies configuration only and never owns occupancy.
-- **Effective Seña**: An optional Seña explicitly marked as collected by an authorized Gestor or
-  Delegado; only this state triggers an automatic Availability Block. Absence, proposed amount, and
-  pending state are not equivalent to an Effective Seña.
-- **Alquiler**: Historical arrangement whose dates and Seña lifecycle can create/update/release an
-  Availability Block without controlling the Unidad's manual state.
+- **Effective Seña**: Optional financial concept; collecting or refunding it does not change the
+  interval blocked by a registered Alquiler.
+- **Alquiler**: Registered contractual occupancy that blocks its exact period regardless of Seña.
+  Its date/cancellation/deletion lifecycle affects occupancy without controlling Unidad.estado.
 - **Public Availability Projection**: Privacy-safe occupied/free representation derived from blocks
   and rules, with no operational identity or payment data.
 
@@ -224,8 +227,9 @@ contain no private identifiers or financial data.
   accepted solely because another modality's rules happen to fit.
 - **SC-002**: 100% of positive-duration overlaps are rejected under concurrent and sequential tests;
   100% of valid boundary-adjacent periods are accepted when buffer rules allow them.
-- **SC-003**: 100% of effective Seña transitions create/update the correct block atomically, and 0%
-  of omitted, proposed, pending, or otherwise non-effective Seña cases create an automatic block.
+- **SC-003**: 100% of registered Alquileres block their intervals regardless of payment or Seña;
+  0% of payment/Seña changes alone release a blocked interval. Cancelled and soft-deleted Alquileres
+  no longer block future availability, with history retained.
 - **SC-004**: 100% of tested Alquiler create/update/expire/cancel/delete flows leave
   `Unidad.estado` unchanged.
 - **SC-005**: Public availability responses contain zero private actor, workspace, Alquiler,
@@ -249,7 +253,7 @@ contain no private identifiers or financial data.
 - Argentina/Goya is the current operating locale, but storage and display must not prevent later
   regional use.
 - Manual calendar management from the governing product document remains in scope alongside
-  automatic Seña blocks.
+  automatic registered-Alquiler occupancy.
 - This feature does not implement online booking or payment processing between public user and
   Gestor; it models trustworthy availability and conflict prevention.
 - Native Android remains a future gated feature. Responsive web evidence does not certify native
