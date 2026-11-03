@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, RefreshCw } from 'lucide-react';
+import { CalendarDays, CalendarClock, RefreshCw } from 'lucide-react';
+import { publicRentalEndLabel, rentedUntilNow } from '@/lib/public-occupancy';
 import { Button } from '@/components/ui/button';
 
 type Occupation = { inicio_at: string; fin_at: string };
@@ -42,6 +43,11 @@ export function DisponibilidadPublica({unidadId,locale='es'}:{
   const [projection,setProjection] = useState<Projection|null>(null);
   const [state,setState] = useState<'loading'|'error'|'ready'>('loading');
   const [revision,setRevision] = useState(0);
+  const [now,setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
   const days = useMemo(() => {
     const today = argToday();
     return Array.from({length:60},(_,i)=>dayPlus(today,i));
@@ -64,6 +70,21 @@ export function DisponibilidadPublica({unidadId,locale='es'}:{
     return ()=>controller.abort();
   },[unidadId,revision]);
 
+  // An exact active interval, not just a busy calendar date, supports the banner.
+  // This intentionally does not label a future booking as occupied now.
+  const rentalEnd = state === 'ready' && projection
+    ? rentedUntilNow(projection.ocupaciones, now, projection.truncado)
+    : null;
+  const untilLabel = rentalEnd ? publicRentalEndLabel(rentalEnd, locale) : '';
+  const occupiedNowText = locale === 'en' ? 'This unit is rented until ' :
+    locale === 'pt' ? 'Esta unidade está alugada até ' :
+    'Esta unidad se encuentra alquilada hasta el ';
+  const stillPublishedText = locale === 'en'
+    ? 'The listing remains published. You can ask about other dates.'
+    : locale === 'pt'
+      ? 'O anúncio continua publicado. Consulte outros períodos.'
+      : 'El aviso sigue publicado. Podés consultar por otros períodos.';
+
   const head=locale==='en'?['M','T','W','T','F','S','S']:locale==='pt'
     ?['S','T','Q','Q','S','S','D']:['L','M','X','J','V','S','D'];
   const offset=(new Date(days[0]+'T00:00:00Z').getUTCDay()+6)%7;
@@ -82,6 +103,14 @@ export function DisponibilidadPublica({unidadId,locale='es'}:{
       </Button>
     </div>}
     {state==='ready'&&projection&&<>
+      {rentalEnd && <div data-testid="unidad-alquilada-hasta" role="status"
+        className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+        <CalendarClock className="h-5 w-5 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" aria-hidden="true"/>
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-foreground">{occupiedNowText}{untilLabel}</p>
+          <p className="text-xs text-muted-foreground">{stillPublishedText}</p>
+        </div>
+      </div>}
       <div className="flex flex-wrap gap-3 text-[11px]">
         <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded bg-amber-500/25 border border-amber-500/50"/>{t[2]}</span>
         <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded bg-muted border border-border"/>{t[3]}</span>
