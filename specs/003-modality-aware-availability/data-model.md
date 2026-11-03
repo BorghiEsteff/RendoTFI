@@ -1,3 +1,5 @@
+> **Decision D1 (2026-11-03):** Any older Seña-gated occupancy examples are superseded by registered-Alquiler blocking. This is a target data model for future manual blocks/rules, not proof that those tables exist in Beta.
+
 # Phase 1 Data Model: Modality-Aware Availability
 
 ## Modeling rules
@@ -7,7 +9,7 @@
 3. Monthly/daily inputs preserve local dates; hourly inputs preserve exact instants and timezone.
 4. The exclusion constraint, not application code, is the final overlap authority.
 5. Availability history is released or soft-deleted, never physically deleted.
-6. Effective Seña state is explicit and is not inferred from amount alone.
+6. A registered non-cancelled Alquiler blocks its whole interval regardless of optional Seña or payment state. Seña has a separate financial lifecycle.
 7. Unidad.estado is not read or mutated by availability lifecycle functions.
 
 ## Enumerations
@@ -24,7 +26,7 @@
 
 | Value | Meaning |
 |---|---|
-| sena | Automatic block created by an effective optional Seña |
+| alquiler | Automatic occupancy block created immediately on Alquiler registration, with or without Seña |
 | mantenimiento | Manual maintenance closure |
 | uso_privado | Manual private-use closure |
 
@@ -132,9 +134,9 @@ Authoritative non-overlapping history for one physical Unidad.
 | id | UUID | yes | Primary key |
 | gestor_id | UUID | yes | Denormalized owner for RLS/indexing |
 | unidad_id | UUID | yes | FK Unidad; occupancy owner |
-| modalidad_precio_id | UUID | no | Required for Seña blocks; optional for manual blocks |
-| alquiler_id | UUID | no | Required only when origin is sena |
-| origen | disponibilidad_origen | yes | sena, mantenimiento or uso_privado |
+| modalidad_precio_id | UUID | no | Snapshot for rental-based block when available; optional for manual blocks |
+| alquiler_id | UUID | no | Required only when origin is alquiler |
+| origen | disponibilidad_origen | yes | alquiler, mantenimiento or uso_privado |
 | precision | disponibilidad_precision | yes | Snapshot of selected modality semantics |
 | zona_horaria | TEXT | yes | IANA timezone snapshot |
 | fecha_inicio_local | DATE | conditional | Required for monthly/daily |
@@ -160,8 +162,8 @@ Authoritative non-overlapping history for one physical Unidad.
 - CHECK fin_at > inicio_at.
 - CHECK bloqueado_hasta_at >= fin_at.
 - CHECK date fields are both present only for date precision and absent for hourly precision.
-- CHECK Seña origin has alquiler_id and modalidad_precio_id.
-- Partial unique index: one active, non-deleted Seña block per alquiler_id.
+- CHECK rental origin has alquiler_id; Seña payment is independent of occupancy.
+- Partial unique index: one active, non-deleted Alquiler block per alquiler_id.
 - Partial GiST exclusion constraint on equal unidad_id and overlapping periodo_bloqueado for active,
   non-deleted rows.
 - GiST index supports public/operational window intersection.
@@ -196,7 +198,7 @@ Existing columns remain for compatibility. New writes use the modality-aware dat
 - Hourly: inicio_at and fin_at are required. Existing date fields remain populated with corresponding
   local calendar dates for backward-compatible reporting but are not the overlap authority.
 - estado_sena cobrada requires monto_sena greater than zero and collection audit fields.
-- estado_sena sin_sena requires no automatic block even when estado_pago is cobrado_total.
+- estado_sena sin_sena does **not** prevent automatic blocking from the registered Alquiler.
 - estado_pago may remain for collection summaries but no longer drives availability by itself.
 - Updating or deleting the selected Modalidad de precio does not rewrite snapshots.
 
@@ -210,7 +212,7 @@ Retained migration work queue for ambiguous historical Alquileres.
 | gestor_id | UUID | yes | Workspace |
 | unidad_id | UUID | yes | Affected Unidad |
 | alquiler_id | UUID | yes | Unique historical Alquiler |
-| reason_code | TEXT | yes | Missing modality, ambiguous Seña, invalid period, or missing timezone |
+| reason_code | TEXT | yes | Missing modality, invalid period, missing timezone or inconsistent historical contract |
 | estado | TEXT | yes | pendiente, resuelta or descartada |
 | resolution_note | TEXT | no | Private required explanation |
 | resolved_by | UUID | no | Authorized actor |
@@ -221,19 +223,19 @@ An Unidad cannot move to estado_revision activa while unresolved review rows rem
 
 ## State transitions
 
-### Seña and automatic block
+### Alquiler and automatic occupancy block (D1, approved 2026-11-03)
 
 | From | Command | To | Availability effect |
 |---|---|---|---|
-| sin_sena | Propose optional amount | pendiente | None |
-| pendiente | Mark collected | cobrada | Create active block atomically |
-| sin_sena | Mark collected with positive amount | cobrada | Create active block atomically |
-| cobrada | Alquiler date/time update | cobrada | Replace block atomically; old block remains if conflict |
-| cobrada | Mark fully paid | cobrada | Keep block; payment summary changes separately |
-| cobrada | Refund/reverse Seña | reintegrada | Release block atomically |
-| any | Cancel Alquiler | unchanged/audited | Release active Seña block atomically |
-| any | Soft-delete Alquiler | unchanged/audited | Release active Seña block atomically |
-| sin_sena or pendiente | Full payment | same | No automatic block; manual block remains available |
+| no Alquiler | Save valid Alquiler, with or without Seña | registered | Create active occupancy block atomically |
+| registered | Collect Seña / receive payment | registered | No availability change |
+| registered | Refund Seña / reverse payment | registered | No availability change |
+| registered | Update Alquiler date/time | registered | Replace occupied interval atomically; old interval retained on conflict |
+| registered | Change total payment status | registered | No availability change |
+| registered | Cancel Alquiler | cancelled | Release occupancy; retain history |
+| registered | Soft-delete Alquiler | deleted | Release occupancy; retain history |
+
+Unidad.estado remains a manual/public state. A Unit can be published while an Alquiler blocks all or part of its future calendar.
 
 ### Manual block
 
