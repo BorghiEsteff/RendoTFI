@@ -81,14 +81,14 @@ export default function Sidebar({ locale, rol = 'gestor' }: { locale: string, ro
     <>
       {/* Mobile Topbar */}
       <div className="md:hidden flex items-center justify-between p-4 border-b bg-background w-full">
-        <Image src="/brand/04_RENDA-horizontal-claro.svg" alt="RENDA" width={100} height={26} priority />
+        <Image src="/brand/rendo-logo-horizontal-light.svg" alt="Rendo" width={100} height={26} priority />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger render={<Button variant="ghost" size="icon" />}>
             <Menu className="h-6 w-6" />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
              <div className="p-6 h-16 flex items-center border-b">
-                <Image src="/brand/04_RENDA-horizontal-claro.svg" alt="RENDA" width={120} height={32} priority />
+                <Image src="/brand/rendo-logo-horizontal-light.svg" alt="Rendo" width={120} height={32} priority />
              </div>
              <NavLinks />
           </SheetContent>
@@ -98,7 +98,7 @@ export default function Sidebar({ locale, rol = 'gestor' }: { locale: string, ro
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r bg-background shrink-0">
         <div className="p-6 h-16 flex items-center">
-          <Image src="/brand/04_RENDA-horizontal-claro.svg" alt="RENDA" width={120} height={32} priority />
+          <Image src="/brand/rendo-logo-horizontal-light.svg" alt="Rendo" width={120} height={32} priority />
         </div>
         <div className="flex-1 overflow-y-auto">
           <NavLinks />

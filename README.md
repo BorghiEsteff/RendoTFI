@@ -1,6 +1,6 @@
-# RENDA - Plataforma Inmobiliaria SaaS
+# Rendo - Plataforma Inmobiliaria SaaS
 
-RENDA es una plataforma inmobiliaria integral diseñada para revolucionar la manera en que se gestionan y alquilan espacios. El sistema funciona con una arquitectura multi-tenant orientada a resolver las necesidades tanto de administradores de propiedades (Gestores) como de los clientes finales.
+Rendo es una plataforma inmobiliaria integral diseñada para revolucionar la manera en que se gestionan y alquilan espacios. El sistema funciona con una arquitectura multi-tenant orientada a resolver las necesidades tanto de administradores de propiedades (Gestores) como de los clientes finales.
 
 Por un lado, provee un robusto panel de gestión donde las agencias inmobiliarias y propietarios pueden administrar sus unidades, controlar su facturación (SaaS) y coordinar equipos de trabajo mediante un sistema de roles y delegados. Por otro lado, ofrece a los usuarios finales un marketplace público, rápido y dinámico para explorar, buscar y descubrir la propiedad perfecta en alquiler.
 

@@ -17,12 +17,12 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: { default: 'RENDA', template: '%s | RENDA' },
+  title: { default: 'Rendo', template: '%s | Rendo' },
   description: 'Encontrá tu alquiler ideal en Goya, Corrientes.',
   icons: { icon: '/favicon.ico', apple: '/apple-touch-icon.png' },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: 'RENDA',
+    title: 'Rendo',
     description: 'Encontrá tu alquiler ideal en Goya, Corrientes.',
     images: [{ url: '/og-image.png', width: 1200, height: 630 }],
     locale: 'es_AR', type: 'website',
