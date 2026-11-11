@@ -44,7 +44,9 @@ Nunca insertar usuarios directamente en auth.users, crear contraseñas predeterm
 ## QA ejecutado
 
 - Migración `20261112001000_rendo_ops_moderation_all.sql` aplicada a Supabase beta.
+- Se probó la RPC utilizando el rol PostgreSQL real `service_role` (no solo `postgres`). Se corrigió el acceso a `auth.users` que ese rol no tiene; ahora la RPC verifica la concesión única en `rendo_dev_access`, cuya identidad valida el trigger y el backend. El rol `authenticated` no puede ejecutar la RPC.
 - Prueba transaccional con publicación sintética y rollback intencional: `revisar → suspender → restaurar publicada` y `pausada → suspender → restaurar pausada`, 5 auditorías generadas y luego revertidas, borrador protegido. Se confirmó ausencia de filas y logs de prueba persistentes.
+- Se verificó adicionalmente bajo `SET LOCAL ROLE service_role`: revisar → suspender → restaurar y 3 entradas auditadas, todo revertido. Resultado: 0 filas sintéticas y 0 auditorías de prueba persistidas.
 - Queda pendiente el recorrido manual autenticado en navegador del superadmin para validar los controles web al desplegar.
 
 ## Despliegue y verificaciones pendientes
