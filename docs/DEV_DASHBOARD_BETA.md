@@ -16,19 +16,17 @@ Estado: preparada en rama; no marcar como desplegada hasta verificar ambos servi
 - La consola está bloqueada por defecto. Exige RENDO_BETA_MODE=true y RENDO_DEV_DASHBOARD_ENABLED=true en ambos despliegues.
 - Toda falla de conexión se presenta como error, no como métricas simuladas.
 
-## Alta de un usuario de desarrollo
-1. En la base de beta, crear o invitar a un correo que controle el propietario mediante Supabase Auth > Users. No editar auth.users por SQL.
-2. Verificar el correo, iniciar sesión y ejecutar esta concesión en el SQL Editor, sustituyendo el email:
+## Alta de cuenta devtest@gmail.com (beta)
 
-    INSERT INTO public.rendo_dev_access(user_id,role,enabled)
-    SELECT id,'dev',true FROM auth.users
-    WHERE lower(email)=lower('REEMPLAZAR_POR_CORREO_REAL')
-      AND email_confirmed_at IS NOT NULL
-    ON CONFLICT (user_id) DO UPDATE
-    SET role=excluded.role, enabled=true, updated_at=now();
+La dirección de desarrollador ya está reservada mediante la tabla privada rendo_dev_invitations con validez de 14 días. No existe todavía el usuario en Supabase Auth y no se ha creado una contraseña.
 
-3. Confirmar 1 fila afectada. No asignar permisos a una cuenta distinta sin aprobación.
-4. Para revocar, establecer enabled=false en rendo_dev_access por user_id.
+1. El titular del correo abre https://rendo-beta-web.vercel.app/es/auth/registro y elige correo electrónico. Introduce devtest@gmail.com y una contraseña privada, que nunca debe enviarse por chat.
+2. Confirma el mensaje enviado por Supabase Auth a ese correo.
+3. Un trigger limitado a auth.users, al confirmar el correo, consume la invitación y concede role=dev en rendo_dev_access. La autorización no procede de user_metadata.
+4. Inicia sesión en /es/auth/login y abre /es/dev. Debe ver métricas reales.
+5. Ante pérdida o cambio de correo, el trigger deshabilita el acceso; también puede revocarse en la tabla rendo_dev_access estableciendo enabled=false.
+
+Nunca insertar usuarios directamente en auth.users, crear contraseñas predeterminadas ni publicar service_role.
 
 ## Despliegue y verificaciones pendientes
 - Migración: supabase/migrations/20261111220000_dev_console_beta.sql.
