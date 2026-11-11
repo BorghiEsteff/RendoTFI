@@ -10,6 +10,7 @@ type Overview = {
   databaseQueryMs: number;
   unidades: number;
   moderacionPendiente: number;
+  publicacionesReportadas: number;
   pagosPendientes: number;
   eventosAuditoria: number;
   usuariosActivos: number;
@@ -145,6 +146,7 @@ export default function DevConsoleClient({ screen }: { screen: Screen }) {
               ['Usuarios activos',overview.usuariosActivos],
               ['Unidades',overview.unidades],
               ['Moderación pendiente',overview.moderacionPendiente],
+              ['Publicaciones reportadas',overview.publicacionesReportadas],
               ['Pagos manuales pendientes',overview.pagosPendientes],
               ['Eventos auditados',overview.eventosAuditoria],
               ['Consulta a base (ms)',overview.databaseQueryMs],
