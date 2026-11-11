@@ -19,6 +19,7 @@ import { PagosModule } from './pagos/pagos.module.js';
 import { MetricasModule } from './metricas/metricas.module.js';
 import { AfipModule } from './afip/afip.module.js';
 import { AuthorizationModule } from './authorization/authorization.module.js';
+import { DevModule } from './dev/dev.module.js';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AuthorizationModule } from './authorization/authorization.module.js';
     MetricasModule,
     AfipModule,
     AuthorizationModule,
+    DevModule,
   ],
   controllers: [AppController],
   providers: [AppService, TraduccionService],
