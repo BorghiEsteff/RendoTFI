@@ -46,8 +46,8 @@ export default async function DevLayout({
         <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-mono text-xs tracking-[0.2em] text-emerald-400">RENDO OPS / BETA</p>
-            <h1 className="text-2xl font-bold">Consola de desarrollo</h1>
-            <p className="text-xs text-slate-400">Datos reales · acceso restringido · acciones auditadas</p>
+            <h1 className="text-2xl font-bold">Consola de desarrollo · Superadmin</h1>
+            <p className="text-xs text-slate-400">Cuenta única · datos reales · acciones auditadas</p>
           </div>
           <Link href={'/' + locale + '/unidades'} className="text-sm text-slate-300 hover:text-white">
             Volver a Rendo
