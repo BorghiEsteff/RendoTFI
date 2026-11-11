@@ -36,7 +36,7 @@ describe('DevGuard security gates', () => {
     vi.clearAllMocks();
     process.env.RENDO_BETA_MODE = 'true';
     process.env.RENDO_DEV_DASHBOARD_ENABLED = 'true';
-    getUser.mockResolvedValue({ data: { user: { id:userId,email:'verified@example.invalid',email_confirmed_at:'2026-11-11',user_metadata:{role:'admin'} } }, error:null });
+    getUser.mockResolvedValue({ data: { user: { id:userId,email:'devtest@gmail.com',email_confirmed_at:'2026-11-11',user_metadata:{role:'admin'} } }, error:null });
     maybeSingle.mockResolvedValue({ data: { role:'dev',enabled:true }, error:null });
   });
 
@@ -56,9 +56,18 @@ describe('DevGuard security gates', () => {
     maybeSingle.mockResolvedValue({ data:null,error:null });
     await expect(guard.canActivate(makeContext('Bearer valid').context)).rejects.toThrow('Usuario sin acceso al panel');
   });
-  it('accepts explicitly enabled dev and supplies backend identity', async () => {
+  it('rejects other emails even when the server access row grants dev', async () => {
+    getUser.mockResolvedValue({ data: { user: { id:userId,email:'other@example.invalid',email_confirmed_at:'2026-11-11' } }, error:null });
+    await expect(guard.canActivate(makeContext('Bearer valid').context)).rejects.toThrow('superadmin');
+    expect(supabase.getAdminClient).not.toHaveBeenCalled();
+  });
+  it('rejects alternate admin role even on the owner email', async () => {
+    maybeSingle.mockResolvedValue({ data:{role:'admin',enabled:true},error:null });
+    await expect(guard.canActivate(makeContext('Bearer valid').context)).rejects.toThrow('sin acceso');
+  });
+  it('accepts the unique verified dev owner and supplies backend identity', async () => {
     const { context, request } = makeContext('Bearer valid');
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(request.dev).toEqual({id:userId,role:'dev',email:'verified@example.invalid'});
+    expect(request.dev).toEqual({id:userId,role:'dev',email:'devtest@gmail.com'});
   });
 });
