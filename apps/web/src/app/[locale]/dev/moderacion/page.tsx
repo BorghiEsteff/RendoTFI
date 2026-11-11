@@ -1,5 +1,5 @@
-import DevConsoleClient from '../DevConsoleClient';
+import ModerationConsole from '../ModerationConsole';
 
 export default function Page() {
-  return <DevConsoleClient screen='moderacion' />;
+  return <ModerationConsole />;
 }
