@@ -3,7 +3,7 @@ import { SupabaseService } from '../supabase/supabase.service.js';
 import type { Request } from 'express';
 
 export interface DevRequest extends Request {
-  dev: { id: string; role: 'dev' | 'admin'; email?: string };
+  dev: { id: string; role: 'dev'; email?: string };
 }
 
 @Injectable()
@@ -23,16 +23,20 @@ export class DevGuard implements CanActivate {
     if (error || !data?.user?.id || !data.user.email_confirmed_at) {
       throw new UnauthorizedException('Cuenta no verificada');
     }
+    // One verified superadmin only. Client-editable user_metadata never grants privileges.
+    if (data.user.email?.trim().toLowerCase() !== 'devtest@gmail.com') {
+      throw new ForbiddenException('La consola está reservada al superadmin');
+    }
     // Never authorize through user_metadata: clients can alter it.
     const { data: access, error: accessError } = await this.supabase.getAdminClient()
       .from('rendo_dev_access')
       .select('role,enabled')
       .eq('user_id', data.user.id)
       .maybeSingle();
-    if (accessError || !access?.enabled || !['dev','admin'].includes(access.role)) {
+    if (accessError || !access?.enabled || access.role !== 'dev') {
       throw new ForbiddenException('Usuario sin acceso al panel');
     }
-    request.dev = { id: data.user.id, email: data.user.email, role: access.role as 'dev' | 'admin' };
+    request.dev = { id: data.user.id, email: data.user.email, role: 'dev' };
     return true;
   }
 }
