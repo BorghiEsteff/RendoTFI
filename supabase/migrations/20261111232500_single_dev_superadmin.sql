@@ -41,7 +41,7 @@ BEGIN
        AND lower(u.email) = 'devtest@gmail.com'
        AND u.email_confirmed_at IS NOT NULL
   ) THEN
-    RAISE EXCEPTION 'RE NDO OPS requires the unique verified superadmin account';
+    RAISE EXCEPTION 'RENDO OPS requires the unique verified superadmin account';
   END IF;
   RETURN NEW;
 END;
