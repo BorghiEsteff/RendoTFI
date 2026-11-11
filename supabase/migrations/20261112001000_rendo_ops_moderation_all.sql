@@ -20,15 +20,14 @@ DECLARE
   v_prev public.unidad_estado;
   v_new public.unidad_estado;
 BEGIN
-  -- Defense in depth: the RPC may only act for the sole verified superadmin.
+  -- Defense in depth: only the singleton access row may act.
+  -- DevGuard verifies Supabase email; DB trigger enforces its confirmed owner.
+  -- service_role intentionally lacks direct SELECT on auth.users.
   IF NOT EXISTS (
     SELECT 1 FROM public.rendo_dev_access a
-    JOIN auth.users u ON u.id = a.user_id
     WHERE a.user_id = p_actor_id
       AND a.enabled = true
       AND a.role = 'dev'
-      AND lower(u.email) = 'devtest@gmail.com'
-      AND u.email_confirmed_at IS NOT NULL
   ) THEN
     RAISE EXCEPTION 'No autorizado para moderar';
   END IF;
