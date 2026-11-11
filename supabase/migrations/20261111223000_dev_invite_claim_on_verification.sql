@@ -32,7 +32,10 @@ BEGIN
       UPDATE public.rendo_dev_access SET enabled = false, updated_at = now()
         WHERE user_id = NEW.id;
     END IF;
-    v_should_claim := OLD.email_confirmed_at IS NULL OR OLD.email IS DISTINCT FROM NEW.email;
+    -- Email changes must NOT reuse the previous email's confirmation.
+    v_should_claim := OLD.email IS NOT DISTINCT FROM NEW.email
+                      AND OLD.email_confirmed_at IS NULL
+                      AND NEW.email_confirmed_at IS NOT NULL;
   END IF;
 
   IF NEW.email_confirmed_at IS NOT NULL AND NEW.email IS NOT NULL
