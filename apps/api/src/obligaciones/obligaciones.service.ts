@@ -118,9 +118,10 @@ export class ObligacionesService {
     }
     const obligaciones = (obligationsResult.data ?? []) as ObligacionBase[];
     const periodos = (paymentsResult.data ?? []) as PeriodoPago[];
+    const hoy = hoyLocal();
     return {
-      periodo, obligaciones, periodos,
-      resumen: resumenUnidad(obligaciones, periodos, periodo, hoyLocal()),
+      periodo, hoy, obligaciones, periodos,
+      resumen: resumenUnidad(obligaciones, periodos, periodo, hoy),
     };
   }
 
