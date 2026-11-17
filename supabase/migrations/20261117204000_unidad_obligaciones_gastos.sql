@@ -92,10 +92,12 @@ BEGIN
     extract(month FROM NEW.periodo)::int, v_base.dia_vencimiento);
   NEW.updated_at := now();
   IF NEW.estado = 'pagado' THEN
-    NEW.pagado_por := auth.uid();
     IF TG_OP = 'UPDATE' AND OLD.estado = 'pagado' THEN
+      -- Rectificar el monto o las notas nunca reescribe quién pagó originalmente.
+      NEW.pagado_por := OLD.pagado_por;
       NEW.pagado_at := OLD.pagado_at;
     ELSE
+      NEW.pagado_por := auth.uid();
       NEW.pagado_at := now();
     END IF;
   ELSE
