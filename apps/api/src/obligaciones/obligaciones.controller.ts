@@ -18,6 +18,20 @@ function token(req: AuthenticatedRequest): string {
 export class ObligacionesResumenController {
   constructor(private readonly service: ObligacionesService) {}
 
+  @Get('panel')
+  panel(
+    @Request() req: AuthenticatedRequest,
+    @Query('ids') ids?: string,
+    @Query('periodo') periodo?: string,
+  ) {
+    const parsed = ids ? ids.split(',').map(id => id.trim()).filter(Boolean) : [];
+    if (parsed.some(id => !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id))) {
+      throw new BadRequestException('IDs inválidos');
+    }
+    // Reutiliza las mismas comprobaciones por unidad que el resumen existente.
+    return this.service.resumen(req.user, token(req), parsed, periodo, true);
+  }
+
   @Get('resumen')
   resumen(
     @Request() req: AuthenticatedRequest,
