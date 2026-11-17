@@ -18,9 +18,10 @@ function periodoLocal() {
 }
 
 export default async function UnidadObligacionesPage({
-  params,
+  params, searchParams,
 }: {
   params: { locale: string; id: string };
+  searchParams?: { periodo?: string };
 }) {
   const { locale, id } = params;
   const cookieStore = cookies();
@@ -47,7 +48,9 @@ export default async function UnidadObligacionesPage({
     </div>;
   }
   const headers = { Authorization: 'Bearer ' + accessToken };
-  const month = periodoLocal();
+  const month = typeof searchParams?.periodo === 'string' &&
+    /^(20\d{2}|21\d{2}|2200)-(0[1-9]|1[0-2])$/.test(searchParams.periodo)
+    ? searchParams.periodo : periodoLocal();
   try {
     const [unidadResponse, obligationsResponse] = await Promise.all([
       fetch(base + '/unidades/' + encodeURIComponent(id), { headers, cache: 'no-store' }),
