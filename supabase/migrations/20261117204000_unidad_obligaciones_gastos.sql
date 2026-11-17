@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.unidad_obligaciones (
   tipo text NOT NULL CHECK (tipo IN ('expensas','inmobiliario','municipal','luz','agua','gas','mantenimiento','otro')),
   nombre varchar(100) NOT NULL CHECK (length(trim(nombre)) > 0),
   frecuencia text NOT NULL CHECK (frecuencia IN ('mensual','bimestral','anual','unica')),
-  periodo_inicio date NOT NULL CHECK (extract(day FROM periodo_inicio) = 1),
+  periodo_inicio date NOT NULL CHECK (extract(day FROM periodo_inicio) = 1 AND extract(year FROM periodo_inicio) BETWEEN 2000 AND 2200),
   dia_vencimiento smallint NOT NULL DEFAULT 10 CHECK (dia_vencimiento BETWEEN 1 AND 28),
   responsable text NOT NULL CHECK (responsable IN ('propietario','inquilino','gestor','otro')),
   monto_estimado numeric(14,2) CHECK (monto_estimado IS NULL OR monto_estimado >= 0),
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.unidad_obligacion_periodos (
   obligacion_id uuid NOT NULL,
   unidad_id uuid NOT NULL,
   gestor_id uuid NOT NULL REFERENCES public.users(id),
-  periodo date NOT NULL CHECK (extract(day FROM periodo) = 1),
+  periodo date NOT NULL CHECK (extract(day FROM periodo) = 1 AND extract(year FROM periodo) BETWEEN 2000 AND 2200),
   vencimiento date NOT NULL,
   estado text NOT NULL CHECK (estado IN ('pagado','pendiente')),
   monto_pagado numeric(14,2) CHECK (monto_pagado IS NULL OR monto_pagado >= 0),
@@ -78,6 +78,7 @@ BEGIN
   SELECT frecuencia, periodo_inicio, dia_vencimiento, activo INTO v_base
     FROM public.unidad_obligaciones WHERE id = NEW.obligacion_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Obligación no encontrada'; END IF;
+  IF NOT v_base.activo THEN RAISE EXCEPTION 'La obligación se encuentra archivada'; END IF;
   v_diff := (extract(year FROM NEW.periodo)::int - extract(year FROM v_base.periodo_inicio)::int) * 12
     + (extract(month FROM NEW.periodo)::int - extract(month FROM v_base.periodo_inicio)::int);
   IF v_diff < 0
@@ -116,6 +117,17 @@ BEGIN
        NEW.unidad_id IS DISTINCT FROM OLD.unidad_id OR
        NEW.created_at IS DISTINCT FROM OLD.created_at THEN
       RAISE EXCEPTION 'La identidad y el propietario de una obligación no pueden modificarse';
+    END IF;
+    -- No permitir que el Data API eluda la protección que aplica el backend:
+    -- cambiar la periodicidad o fecha de vencimiento corrompería pagos ya registrados.
+    IF (NEW.frecuencia IS DISTINCT FROM OLD.frecuencia
+      OR NEW.periodo_inicio IS DISTINCT FROM OLD.periodo_inicio
+      OR NEW.dia_vencimiento IS DISTINCT FROM OLD.dia_vencimiento)
+      AND EXISTS (
+        SELECT 1 FROM public.unidad_obligacion_periodos
+        WHERE obligacion_id = OLD.id
+      ) THEN
+      RAISE EXCEPTION 'No se puede cambiar periodicidad o vencimiento con pagos registrados';
     END IF;
   END IF;
   NEW.updated_at := now();
@@ -221,6 +233,12 @@ DROP TRIGGER IF EXISTS trg_audit_unidad_obligacion_periodo ON public.unidad_obli
 CREATE TRIGGER trg_audit_unidad_obligacion_periodo
   AFTER INSERT OR UPDATE ON public.unidad_obligacion_periodos
   FOR EACH ROW EXECUTE FUNCTION public.audit_unidad_obligacion();
+
+-- Las funciones de trigger no son RPC. Evitar ejecución directa vía Data API
+-- (y minimizar superficie de SECURITY DEFINER).
+REVOKE ALL ON FUNCTION public.guard_unidad_obligacion() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.guard_unidad_obligacion_periodo() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.audit_unidad_obligacion() FROM PUBLIC, anon, authenticated;
 
 COMMENT ON TABLE public.unidad_obligaciones IS
   'Private per-unit recurring expense obligations; no public marketplace financial exposure.';
