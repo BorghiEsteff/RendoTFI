@@ -176,8 +176,8 @@ CREATE POLICY "unidad_obligacion_periodos_editar" ON public.unidad_obligacion_pe
   WITH CHECK (public.can_manage_unidad(unidad_id)
     AND gestor_id = (SELECT gestor_id FROM public.unidades WHERE id = unidad_id));
 
-REVOKE ALL ON public.unidad_obligaciones FROM anon, PUBLIC;
-REVOKE ALL ON public.unidad_obligacion_periodos FROM anon, PUBLIC;
+REVOKE ALL ON public.unidad_obligaciones FROM authenticated, anon, PUBLIC;
+REVOKE ALL ON public.unidad_obligacion_periodos FROM authenticated, anon, PUBLIC;
 GRANT SELECT, INSERT, UPDATE ON public.unidad_obligaciones TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.unidad_obligacion_periodos TO authenticated;
 -- Intentionally no DELETE: disable with activo=false, keep historical payments forever.
