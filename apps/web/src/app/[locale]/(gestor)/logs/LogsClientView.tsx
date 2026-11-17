@@ -36,7 +36,7 @@ function textField(value: unknown): string | null {
 
 function category(action: string): string {
   if (action.includes('invitacion') || action.includes('delegacion')) return 'delegados';
-  if (action.includes('unidades') || action.includes('unidad') || action.includes('modalidades_precio') || action.includes('grupos')) return 'unidades';
+  if (action.includes('unidades') || action.includes('unidad') || action.includes('obligacion') || action.includes('modalidades_precio') || action.includes('grupos')) return 'unidades';
   if (action.includes('alquileres') || action.includes('pagos') || action.includes('cobranzas') || action.includes('cuotas')) return 'alquileres';
   if (action.includes('inquilinos')) return 'inquilinos';
   return 'otros';
@@ -70,6 +70,25 @@ function presentation(log: LogEntry) {
       break;
     case 'revocar_delegacion':
       title = actor + (target ? ' revocó el acceso de ' + target + '.' : ' revocó el acceso de un delegado.');
+      break;
+    case 'crear_obligacion':
+      title = actor + ' agregó un gasto' + (textField(log.metadata.nombre) ? ' («' + textField(log.metadata.nombre) + '»)' : '') + (unit ? ' a la unidad «' + unit + '».' : '.');
+      break;
+    case 'actualizar_obligacion':
+      title = actor + ' actualizó un gasto' + (textField(log.metadata.nombre) ? ' («' + textField(log.metadata.nombre) + '»)' : '') + (unit ? ' de la unidad «' + unit + '».' : '.');
+      break;
+    case 'archivar_obligacion':
+      title = actor + ' archivó un gasto' + (textField(log.metadata.nombre) ? ' («' + textField(log.metadata.nombre) + '»)' : '') + (unit ? ' de la unidad «' + unit + '».' : '.');
+      break;
+    case 'pagar_obligacion':
+      title = actor + ' registró como pagado el gasto ' +
+        (textField(log.metadata.nombre) ? '«' + textField(log.metadata.nombre) + '»' : 'de una unidad') +
+        (unit ? ' de la unidad «' + unit + '».' : '.');
+      break;
+    case 'reabrir_obligacion':
+      title = actor + ' volvió a marcar pendiente el gasto ' +
+        (textField(log.metadata.nombre) ? '«' + textField(log.metadata.nombre) + '»' : 'de una unidad') +
+        (unit ? ' de la unidad «' + unit + '».' : '.');
       break;
     case 'crear_unidades':
     case 'crear_unidad':
@@ -141,6 +160,19 @@ function presentation(log: LogEntry) {
     const from = textField(log.metadata.estado_anterior);
     const to = textField(log.metadata.nuevo_estado);
     if (from || to) detail.push('Estado: ' + (from ? humanState[from] || from : 'No disponible') + ' → ' + (to ? humanState[to] || to : 'No disponible'));
+  }
+  if (log.accion.includes('obligacion')) {
+    const month = textField(log.metadata.periodo);
+    if (month) detail.push('Período: ' + month);
+    if (log.metadata.monto_pagado !== null && log.metadata.monto_pagado !== undefined) {
+      const numeric = Number(log.metadata.monto_pagado);
+      const currency = textField(log.metadata.moneda);
+      if (Number.isFinite(numeric)) {
+        detail.push('Importe registrado: ' + (currency && ['ARS','UYU','USD'].includes(currency)
+          ? new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(numeric)
+          : String(numeric)));
+      }
+    }
   }
   if (log.recursoNombre && !title.includes('«' + log.recursoNombre + '»')) detail.push('Registro: ' + log.recursoNombre);
   return { title, detail, group: category(log.accion) };
@@ -275,7 +307,7 @@ export default function LogsClientView({
                       )}
                       {log.entidadTipo === 'unidades' && log.entidadRef && log.recursoNombre && (
                         <Link className="inline-block text-sm text-primary underline underline-offset-4 min-h-[44px] py-2"
-                          href={'/' + locale + '/mis-unidades/' + log.entidadRef + '/editar'}>Ver unidad</Link>
+                          href={'/' + locale + '/mis-unidades/' + log.entidadRef + (log.accion.includes('obligacion') ? '/obligaciones' : '/editar')}>{log.accion.includes('obligacion') ? 'Ver gastos' : 'Ver unidad'}</Link>
                       )}
                       <details className="text-xs text-muted-foreground">
                         <summary className="cursor-pointer min-h-[40px] inline-flex items-center">Detalles técnicos</summary>

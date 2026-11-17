@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "pnpm run test:audit && nest build",
+    "build": "pnpm run test:audit && pnpm run test:expenses && nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -21,7 +21,8 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "test:audit": "vitest run src/authorization/action-log.service.spec.ts"
+    "test:audit": "vitest run src/authorization/action-log.service.spec.ts",
+    "test:expenses": "vitest run src/obligaciones/obligaciones.logic.spec.ts src/obligaciones/obligaciones.service.spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

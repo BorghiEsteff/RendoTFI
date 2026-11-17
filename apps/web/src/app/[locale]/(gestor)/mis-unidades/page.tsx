@@ -87,6 +87,35 @@ export default async function MisUnidadesPage({ params: { locale }, searchParams
     );
   }
 
+  // Un resumen por lote evita una consulta de gastos por cada tarjeta. Ante error,
+  // no se infiere que la unidad esté al día ni que no tenga obligaciones.
+  let obligacionesResumen: Record<string, {
+    estado: string; total: number; pagadas: number; pendientes: number; vencidas: number;
+  }> = {};
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+  if (token && apiBase && unidadesResult.data.length > 0) {
+    try {
+      const monthParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit',
+      }).formatToParts(new Date());
+      const parts = Object.fromEntries(monthParts.map(part => [part.type, part.value]));
+      const currentMonth = parts.year + '-' + parts.month;
+      const ids = unidadesResult.data.map(item => item.id).join(',');
+      const response = await fetch(
+        apiBase + '/unidades/obligaciones/resumen?ids=' + encodeURIComponent(ids) +
+          '&periodo=' + currentMonth,
+        { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' },
+      );
+      if (response.ok) {
+        const result = await response.json() as { unidades?: typeof obligacionesResumen };
+        obligacionesResumen = result.unidades || {};
+      }
+    } catch {
+      // Estado no disponible: la tarjeta muestra "Consultar", nunca un estado falso.
+    }
+  }
+
   // Count > 0 en otra página no es inventario vacío: solo está vacío si count === 0 y 0 grupos
   const isGloballyEmpty = unidadesResult.count === 0 && gruposResult.data.length === 0;
 
@@ -153,6 +182,7 @@ export default async function MisUnidadesPage({ params: { locale }, searchParams
           isReadOnly={isReadOnly}
           canCreateGrupo={canCreateGrupo}
           canCreateUnidad={canCreateUnidad}
+          obligacionesResumen={obligacionesResumen}
           pagination={{
             page: unidadesResult.page,
             limit: unidadesResult.limit,
