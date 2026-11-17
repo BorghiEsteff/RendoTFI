@@ -116,4 +116,95 @@ describe('Gastos — autorización en cada recurso', () => {
     })).rejects.toBeInstanceOf(BadRequestException);
   });
 
+
+  it('agrupa conceptos por unidad sin mezclar pagos ni nombres de otra propiedad', async () => {
+    const { service, db } = mockService(true, true);
+    const anotherUnit = 'b0000000-0000-0000-0000-000000000002';
+    const anotherObligation = 'b0000000-0000-0000-0000-000000000003';
+    const obligations = [
+      {
+        id: obligationId, unidad_id: unitId, nombre: 'Luz A', tipo: 'luz', frecuencia: 'mensual',
+        periodo_inicio: '2026-11-01', dia_vencimiento: 10, responsable: 'inquilino',
+        monto_estimado: 1000, moneda: 'ARS', activo: true,
+      },
+      {
+        id: anotherObligation, unidad_id: anotherUnit, nombre: 'Expensas B', tipo: 'expensas',
+        frecuencia: 'mensual', periodo_inicio: '2026-11-01', dia_vencimiento: 20,
+        responsable: 'propietario', monto_estimado: 5000, moneda: 'ARS', activo: true,
+      },
+    ];
+    const payments = [
+      { unidad_id: unitId, obligacion_id: obligationId, periodo: '2026-11-01', estado: 'pagado', monto_pagado: 900 },
+      { unidad_id: anotherUnit, obligacion_id: anotherObligation, periodo: '2026-11-01', estado: 'pendiente', monto_pagado: null },
+    ];
+    const from = vi.fn((table: string) => {
+      const query = {
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({
+          data: table === 'unidad_obligaciones' ? obligations : payments, error: null,
+        }),
+      };
+      return query;
+    });
+    db.getClient.mockReturnValue({ from } as any);
+
+    const panel = await service.resumen(actor, 'valid-token', [unitId, anotherUnit], '2026-11', true);
+    expect(panel.periodo).toBe('2026-11');
+    expect(panel.unidades[unitId].conceptos?.map(x => x.nombre)).toEqual(['Luz A']);
+    expect(panel.unidades[anotherUnit].conceptos?.map(x => x.nombre)).toEqual(['Expensas B']);
+    expect(panel.unidades[unitId].conceptos?.[0].estado).toBe('pagado');
+    expect(panel.unidades[unitId].conceptos?.[0].monto_pagado).toBe(900);
+    expect(panel.unidades[anotherUnit].conceptos?.[0].estado).toBe('pendiente');
+    expect(panel.unidades[anotherUnit].conceptos?.[0].monto_pagado).toBeNull();
+    expect(from).toHaveBeenCalledTimes(2);
+  });
+
+  it('separa pago actual y deuda anterior sin ocultar vencidos en el panel', async () => {
+    const { service, db } = mockService(true, true);
+    const obligations = [{
+      id: obligationId, unidad_id: unitId, nombre: 'Impuesto municipal',
+      tipo: 'municipal', frecuencia: 'mensual', periodo_inicio: '2026-10-01',
+      dia_vencimiento: 10, responsable: 'propietario', monto_estimado: 1200,
+      moneda: 'ARS', activo: true,
+    }];
+    const payments = [{ unidad_id: unitId, obligacion_id: obligationId,
+      periodo: '2026-11-01', estado: 'pagado', monto_pagado: 1200 }];
+    db.getClient.mockReturnValue({ from: vi.fn((table: string) => ({
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({
+        data: table === 'unidad_obligaciones' ? obligations : payments, error: null,
+      }),
+    })) } as any);
+    const panel = await service.resumen(actor, 'valid-token', [unitId], '2026-11', true);
+    const concepto = panel.unidades[unitId].conceptos?.[0];
+    expect(panel.unidades[unitId].estado).toBe('vencido');
+    expect(concepto?.estado).toBe('pagado');
+    expect(concepto?.periodos_vencidos).toBe(1);
+  });
+
+  it('un resumen reducido no incluye datos de conceptos cuando no se solicitan', async () => {
+    const { service, db } = mockService(true, true);
+    db.getClient.mockReturnValue({ from: vi.fn((table: string) => ({
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({
+        data: table === 'unidad_obligaciones' ? [{
+          id: obligationId, unidad_id: unitId, nombre: 'Luz',
+          frecuencia: 'mensual', periodo_inicio: '2026-11-01',
+          dia_vencimiento: 10, activo: true,
+        }] : [], error: null,
+      }),
+    })) } as any);
+    const result = await service.resumen(actor, 'valid-token', [unitId], '2026-11');
+    expect(result.unidades[unitId].conceptos).toBeUndefined();
+  });
+
 });

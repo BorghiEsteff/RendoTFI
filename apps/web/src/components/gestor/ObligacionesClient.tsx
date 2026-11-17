@@ -228,17 +228,22 @@ export default function ObligacionesClient({
   const readyForPeriod = data.periodo === periodo && !loading;
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
-      <Link href={'/' + locale + '/mis-unidades'} className="inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Volver a mis unidades
+      <Link href={'/' + locale + '/gastos?periodo=' + encodeURIComponent(periodo)}
+        className="inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Todas las unidades y gastos
       </Link>
 
-      <header className="space-y-2">
+      <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <CircleDollarSign className="h-7 w-7 text-primary" aria-hidden="true" />
           <h1 className="text-2xl sm:text-3xl font-bold">Gastos y obligaciones</h1>
         </div>
-        <p className="text-sm text-muted-foreground">{nombreUnidad}</p>
-        <p className="text-xs text-muted-foreground">Control privado y manual de impuestos, expensas, servicios y otros gastos. No modifica cobros de alquiler ni el estado de publicación de la unidad.</p>
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Unidad seleccionada</p>
+          <p className="mt-1 break-words text-lg font-semibold text-foreground">{nombreUnidad}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Los conceptos y pagos que ves a continuación pertenecen únicamente a esta unidad.</p>
+        </div>
+        <p className="text-xs text-muted-foreground">Control privado y manual de impuestos, expensas y servicios. No modifica cobros de alquiler ni el estado de publicación.</p>
       </header>
 
       <section className="rounded-2xl border bg-card p-4 sm:p-5 space-y-3">

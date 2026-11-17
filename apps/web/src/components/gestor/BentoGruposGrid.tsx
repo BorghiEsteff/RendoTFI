@@ -79,9 +79,9 @@ function GastosUnidadLink({
     'text-muted-foreground';
   return (
     <Link href={'/' + locale + '/mis-unidades/' + unidadId + '/obligaciones'}
-      className={'inline-flex items-center gap-2 min-h-[44px] text-xs font-medium hover:underline underline-offset-4 ' + color}
-      aria-label={'Ver gastos y obligaciones: ' + label}>
-      <span>Gastos:</span><span>{label}</span>
+      className={'inline-flex items-center justify-center gap-2 min-h-[44px] rounded-lg border border-border bg-muted/30 px-3 text-xs font-semibold hover:border-primary/40 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ' + color}
+      aria-label={'Ver gastos y obligaciones de esta unidad. Estado: ' + label}>
+      <span>Ver gastos</span><span aria-hidden="true">·</span><span>{label}</span>
     </Link>
   );
 }

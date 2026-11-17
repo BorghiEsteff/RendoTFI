@@ -14,6 +14,7 @@ import {
   UserCheck,
   CreditCard,
   HandCoins,
+  WalletCards,
   ReceiptText,
   Compass,
   History,
@@ -48,12 +49,17 @@ export default function Sidebar({
     setMounted(true);
   }, []);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isExpenseDetail = pathname.startsWith(`/${locale}/mis-unidades/`) && /\/obligaciones\/?$/.test(pathname);
+  const isActive = (href: string) => {
+    if (isExpenseDetail) return href === `/${locale}/gastos`;
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const navigation = [
     { label: tNav('dashboard'), href: `/${locale}/dashboard`, icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: tNav('metrics'), href: `/${locale}/metricas`, icon: <BarChart3 className="h-5 w-5" />, reqGestor: true },
     { label: tNav('units'), href: `/${locale}/mis-unidades`, icon: <Building2 className="h-5 w-5" /> },
+    { label: 'Gastos y obligaciones', href: `/${locale}/gastos`, icon: <WalletCards className="h-5 w-5" /> },
     { label: tNav('tenants'), href: `/${locale}/inquilinos`, icon: <Users className="h-5 w-5" /> },
     { label: tNav('rentals'), href: `/${locale}/alquileres`, icon: <FileText className="h-5 w-5" /> },
     { label: 'Cobros y deudas', href: `/${locale}/cobranzas`, icon: <HandCoins className="h-5 w-5" /> },
