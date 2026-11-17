@@ -34,6 +34,7 @@ export interface PagoPeriodo {
 }
 export interface DatosObligaciones {
   periodo: string;
+  hoy: string;
   obligaciones: Obligacion[];
   periodos: PagoPeriodo[];
   resumen: { estado: EstadoResumen; total: number; pagadas: number; pendientes: number; vencidas: number };
@@ -325,7 +326,7 @@ export default function ObligacionesClient({
           const pago = data.periodos.find(p => p.obligacion_id === item.id && p.periodo.slice(0,7) === periodo);
           const paid = applies && pago?.estado === 'pagado';
           const due = periodo + '-' + String(item.dia_vencimiento).padStart(2, '0');
-          const overdue = applies && !paid && due < new Date().toLocaleDateString('en-CA');
+          const overdue = applies && !paid && due < data.hoy;
           return (
             <article key={item.id} className="rounded-2xl border bg-card p-4 sm:p-5 space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
