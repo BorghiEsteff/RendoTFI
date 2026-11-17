@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, CalendarDays, CheckCircle2, CircleDollarSign,
@@ -112,6 +112,7 @@ export default function ObligacionesClient({
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(newForm(initialData.periodo));
   const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const requestSerial = useRef(0);
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
   const endpoint = apiBase + '/unidades/' + encodeURIComponent(unidadId) + '/obligaciones';
 
@@ -130,27 +131,33 @@ export default function ObligacionesClient({
   }, [endpoint, token]);
 
   const reload = useCallback(async (month: string) => {
+    const serial = ++requestSerial.current;
     setLoading(true);
     try {
-      const fresh = await call('?periodo=' + encodeURIComponent(month));
-      setData(fresh as DatosObligaciones);
+      const fresh = await call('?periodo=' + encodeURIComponent(month)) as DatosObligaciones;
+      if (serial !== requestSerial.current) return false;
+      if (fresh.periodo !== month) throw new Error('La API devolvió un período diferente');
+      setData(fresh);
       setError(null);
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los gastos');
+      if (serial === requestSerial.current) setError(err instanceof Error ? err.message : 'No se pudieron cargar los gastos');
+      return false;
     } finally {
-      setLoading(false);
+      if (serial === requestSerial.current) setLoading(false);
     }
   }, [call]);
 
   useEffect(() => {
-    if (periodo !== initialData.periodo) void reload(periodo);
-  }, [initialData.periodo, periodo, reload]);
+    if (periodo !== data.periodo) void reload(periodo);
+  }, [periodo, data.periodo, reload]);
 
   const mutate = async (work: () => Promise<unknown>, success: string) => {
     setBusy(true); setError(null); setNotice(null);
     try {
       await work();
-      await reload(periodo);
+      const refreshed = await reload(periodo);
+      if (!refreshed) throw new Error('Se guardó el cambio, pero no se pudo actualizar la información. Recargá la página.');
       setNotice(success);
       return true;
     } catch (err) {
@@ -218,6 +225,7 @@ export default function ObligacionesClient({
   };
 
   const resumen = data.resumen;
+  const readyForPeriod = data.periodo === periodo && !loading;
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
       <Link href={'/' + locale + '/mis-unidades'} className="inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
@@ -241,9 +249,13 @@ export default function ObligacionesClient({
           <Input id="expense-month" type="month" className="w-auto min-h-[44px]" value={periodo}
             min="2000-01" max="2200-12" onChange={e => setPeriodo(e.target.value)} />
         </div>
-        <div aria-live="polite" className={'rounded-xl border p-4 space-y-1 ' + estadoClass[resumen.estado]}>
-          <p className="font-semibold text-sm">{estados[resumen.estado]}</p>
-          <p className="text-xs">{resumen.pagadas} pagadas · {resumen.pendientes} pendientes · {resumen.vencidas} vencidas</p>
+        <div aria-live="polite" className={'rounded-xl border p-4 space-y-1 ' + (readyForPeriod ? estadoClass[resumen.estado] : 'bg-muted border-border text-muted-foreground')}>
+          {readyForPeriod ? (
+            <>
+              <p className="font-semibold text-sm">{estados[resumen.estado]}</p>
+              <p className="text-xs">{resumen.pagadas} pagadas · {resumen.pendientes} pendientes · {resumen.vencidas} vencidas</p>
+            </>
+          ) : <p className="text-sm font-medium">Consultando el período seleccionado…</p>}
         </div>
         <p className="text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 inline mr-1" />
@@ -318,10 +330,10 @@ export default function ObligacionesClient({
 
       <section className="space-y-3" aria-label="Gastos configurados" aria-busy={loading || busy}>
         {loading && <p className="text-sm text-muted-foreground">Actualizando período…</p>}
-        {!data.obligaciones.length && <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground text-sm">
+        {readyForPeriod && !data.obligaciones.length && <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground text-sm">
           Todavía no hay gastos configurados. Agregá expensas, impuestos o servicios para empezar a controlarlos.
         </div>}
-        {data.obligaciones.map(item => {
+        {readyForPeriod && data.obligaciones.map(item => {
           const applies = correspondiente(item, periodo);
           const pago = data.periodos.find(p => p.obligacion_id === item.id && p.periodo.slice(0,7) === periodo);
           const paid = applies && pago?.estado === 'pagado';
