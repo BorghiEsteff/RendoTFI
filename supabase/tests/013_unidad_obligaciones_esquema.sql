@@ -1,5 +1,5 @@
 -- Run in a LOCAL or isolated QA database after applying
--- 20261117204000_unidad_obligaciones_gastos.sql. No production mutation.
+-- 20261117211914_unidad_obligaciones_gastos_20261117.sql. No production mutation.
 BEGIN;
 SELECT plan(12);
 

@@ -30,7 +30,7 @@ Todas las rutas usan SupabaseAuthGuard, JWT, DTO validados y AuthorizationServic
 
 ## Migración requerida
 
-Archivo: supabase/migrations/20261117204000_unidad_obligaciones_gastos.sql.
+Archivo: supabase/migrations/20261117211914_unidad_obligaciones_gastos_20261117.sql.
 
 Crea unidad_obligaciones y unidad_obligacion_periodos, índices, claves compuestas, triggers de validación y auditoría, RLS por unidad y GRANT mínimos. No expone gastos al marketplace ni a anon. No permite DELETE. No inserta datos de prueba ni cambia roles, publicaciones o alquileres.
 
