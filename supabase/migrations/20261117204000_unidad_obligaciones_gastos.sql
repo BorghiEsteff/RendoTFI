@@ -195,13 +195,13 @@ BEGIN
       WHEN OLD.activo AND NOT NEW.activo THEN 'archivar_obligacion'
       ELSE 'actualizar_obligacion' END;
     v_metadata := jsonb_build_object('obligacion_id', NEW.id,
-      'nombre', NEW.nombre, 'tipo', NEW.tipo, 'frecuencia', NEW.frecuencia);
+      'nombre', NEW.nombre, 'tipo', NEW.tipo, 'frecuencia', NEW.frecuencia, 'moneda', NEW.moneda);
   ELSE
     v_action := CASE WHEN NEW.estado = 'pagado' THEN 'pagar_obligacion' ELSE 'reabrir_obligacion' END;
     v_metadata := jsonb_build_object('obligacion_id', NEW.obligacion_id,
       'periodo', to_char(NEW.periodo, 'YYYY-MM'), 'estado', NEW.estado,
       'monto_pagado', NEW.monto_pagado);
-    SELECT v_metadata || jsonb_build_object('nombre', nombre) INTO v_metadata
+    SELECT v_metadata || jsonb_build_object('nombre', nombre, 'moneda', moneda) INTO v_metadata
       FROM public.unidad_obligaciones WHERE id = NEW.obligacion_id;
   END IF;
   INSERT INTO public.log_acciones (
