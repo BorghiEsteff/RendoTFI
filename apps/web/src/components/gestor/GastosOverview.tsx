@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, ArrowRight, Building2, CalendarDays, CheckCircle2, CircleDollarSign,
+  ArrowLeft, ArrowRight, Building2, CalendarDays,
   Filter, Info, Plus, ReceiptText, Search, WalletCards,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -268,11 +268,16 @@ export default function GastosOverview({
         Actualizando las obligaciones del período seleccionado…
       </p> : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card p-8 text-center space-y-2">
-          <Search className="mx-auto h-7 w-7 text-muted-foreground"/>
-          <h2 className="font-semibold">No hay unidades que coincidan</h2>
+          <Building2 className="mx-auto h-7 w-7 text-muted-foreground"/>
+          <h2 className="font-semibold">{unidades.length ? 'No hay unidades que coincidan' : 'Todavía no tenés unidades'}</h2>
           <p className="text-sm text-muted-foreground">
-            Probá cambiando el período o quitando alguno de los filtros.
+            {unidades.length ? 'Probá cambiando el período o quitando alguno de los filtros.' :
+              'Registrá una propiedad desde Mis unidades para empezar a controlar sus gastos.'}
           </p>
+          {!unidades.length && canManage && <Link href={'/' + locale + '/mis-unidades/nueva'}
+            className={buttonVariants({ size: 'sm', className: 'mt-2 min-h-[44px]' })}>
+            <Plus className="mr-2 h-4 w-4"/> Registrar unidad
+          </Link>}
         </div>
       ) : filtered.map(unit => {
         const data = unit.resumen!;
