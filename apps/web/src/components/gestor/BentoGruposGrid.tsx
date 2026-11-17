@@ -52,11 +52,38 @@ export interface BentoGruposGridProps {
   isReadOnly?: boolean;
   canCreateGrupo?: boolean;
   canCreateUnidad?: boolean;
+  obligacionesResumen?: Record<string, { estado: string; total: number; pagadas: number; pendientes: number; vencidas: number }>;
   pagination?: {
     page: number;
     limit: number;
     total: number;
   };
+}
+
+function GastosUnidadLink({
+  locale, unidadId, resumen,
+}: {
+  locale: string;
+  unidadId: string;
+  resumen?: { estado: string; total: number; pagadas: number; pendientes: number; vencidas: number };
+}) {
+  const state = resumen?.estado;
+  const label = state === 'al_dia' ? 'Al día' :
+    state === 'vencido' ? 'Vencidos' :
+    state === 'pendiente' ? 'Pendientes' :
+    state === 'sin_vencimientos' ? 'Sin vencimientos' :
+    state === 'sin_configurar' ? 'Sin configurar' : 'Consultar';
+  const color = state === 'al_dia' ? 'text-emerald-700 dark:text-emerald-300' :
+    state === 'vencido' ? 'text-rose-700 dark:text-rose-300' :
+    state === 'pendiente' ? 'text-amber-700 dark:text-amber-300' :
+    'text-muted-foreground';
+  return (
+    <Link href={'/' + locale + '/mis-unidades/' + unidadId + '/obligaciones'}
+      className={'inline-flex items-center gap-2 min-h-[44px] text-xs font-medium hover:underline underline-offset-4 ' + color}
+      aria-label={'Ver gastos y obligaciones: ' + label}>
+      <span>Gastos:</span><span>{label}</span>
+    </Link>
+  );
 }
 
 const ESTADO_STYLES: Record<string, string> = {
@@ -78,6 +105,7 @@ export function BentoGruposGrid({
   isReadOnly = false,
   canCreateGrupo = false,
   canCreateUnidad = false,
+  obligacionesResumen = {},
   pagination,
 }: BentoGruposGridProps) {
   const t = useTranslations('Inventario');
@@ -289,6 +317,7 @@ export function BentoGruposGrid({
                               <strong className="text-foreground font-semibold">{precioStr}</strong>
                             </div>
                           )}
+                          <GastosUnidadLink locale={locale} unidadId={unidad.id} resumen={obligacionesResumen[unidad.id]} />
                         </div>
                       );
                     })}
@@ -417,6 +446,7 @@ export function BentoGruposGrid({
                             <strong className="text-foreground font-semibold">{precioStr}</strong>
                           </div>
                         )}
+                          <GastosUnidadLink locale={locale} unidadId={unidad.id} resumen={obligacionesResumen[unidad.id]} />
                       </div>
                     );
                   })}
@@ -478,6 +508,7 @@ export function BentoGruposGrid({
                   <TableHead className="font-mono text-xs uppercase">Grupo / Edificio</TableHead>
                   <TableHead className="font-mono text-xs uppercase">Categoría</TableHead>
                   <TableHead className="font-mono text-xs uppercase">Estado</TableHead>
+                  <TableHead className="font-mono text-xs uppercase">Gastos</TableHead>
                   <TableHead className="text-right font-mono text-xs uppercase">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -515,6 +546,7 @@ export function BentoGruposGrid({
                           {unidad.estado.replace(/_/g, ' ')}
                         </Badge>
                       </TableCell>
+                      <TableCell><GastosUnidadLink locale={locale} unidadId={unidad.id} resumen={obligacionesResumen[unidad.id]} /></TableCell>
                       <TableCell className="text-right">
                         {!isReadOnly ? (
                           <Link
