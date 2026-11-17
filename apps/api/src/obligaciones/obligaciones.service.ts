@@ -86,8 +86,8 @@ export class ObligacionesService {
     if (obligationsResult.data?.length === 1000 || paymentsResult.data?.length === 1000) {
       throw new InternalServerErrorException('Historial demasiado extenso para calcular el resumen sin truncarlo');
     }
-    const obligaciones = (obligationsResult.data ?? []) as ObligacionBase[] & Array<{ unidad_id: string }>;
-    const pagos = (paymentsResult.data ?? []) as PeriodoPago[] & Array<{ unidad_id: string }>;
+    const obligaciones = (obligationsResult.data ?? []) as Array<ObligacionBase & { unidad_id: string }>;
+    const pagos = (paymentsResult.data ?? []) as Array<PeriodoPago & { unidad_id: string }>;
     const today = hoyLocal();
     const unidades: Record<string, ReturnType<typeof resumenUnidad>> = {};
     for (const id of unidadIds) {
