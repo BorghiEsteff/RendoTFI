@@ -147,11 +147,12 @@ export class ObligacionesService {
     if (dto.nombre !== undefined && !dto.nombre.trim()) throw new BadRequestException('Nombre obligatorio');
     if (dto.periodo_inicio !== undefined) validarPeriodo(dto.periodo_inicio);
     if ((dto.frecuencia && dto.frecuencia !== current.frecuencia)
-      || (dto.periodo_inicio && dto.periodo_inicio !== current.periodo_inicio.slice(0, 7))) {
+      || (dto.periodo_inicio && dto.periodo_inicio !== current.periodo_inicio.slice(0, 7))
+      || (dto.dia_vencimiento && dto.dia_vencimiento !== current.dia_vencimiento)) {
       const { data, error } = await this.supabase.getClient(token)
         .from('unidad_obligacion_periodos').select('id').eq('obligacion_id', obligacionId).limit(1);
       if (error) throw new InternalServerErrorException('No se pudo verificar el historial');
-      if (data?.length) throw new ConflictException('No se puede cambiar la frecuencia o fecha de inicio cuando hay historial. Archivá esta obligación y creá otra.');
+      if (data?.length) throw new ConflictException('No se puede cambiar la frecuencia, inicio o vencimiento cuando existe historial. Archivá esta obligación y creá otra.');
     }
     const patch = {
       ...dto,
