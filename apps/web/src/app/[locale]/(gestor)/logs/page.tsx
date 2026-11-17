@@ -2,14 +2,35 @@ import { createServerClient } from '@supabase/ssr';
 import { getServerAuth } from '@/lib/supabase/server-auth';
 import { getServerAccessContext } from '@/lib/access-context';
 import { cookies } from 'next/headers';
-import LogsClientView, { LogEntry } from './LogsClientView';
+import { redirect } from 'next/navigation';
+import LogsClientView, { type LogEntry } from './LogsClientView';
 import { ShieldAlert } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+const PAGE_SIZE = 50;
+
+type RawAuditEvent = {
+  id: string;
+  actor_id: string;
+  actor_rol: string;
+  actor_nombre?: string | null;
+  objetivo_nombre?: string | null;
+  recurso_nombre?: string | null;
+  accion: string;
+  recurso_tipo: string;
+  recurso_id?: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export default async function LogsPage({
+  params,
   searchParams,
 }: {
+  params: { locale: string };
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
+  const locale = params.locale;
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,100 +41,63 @@ export default async function LogsPage({
           return cookieStore.get(name)?.value;
         },
       },
-    }
+    },
   );
 
   const { user, accessToken } = await getServerAuth(cookieStore, supabase);
-  if (!user) return null;
+  if (!user) redirect('/' + locale + '/auth/login');
 
-  // Strict owner-only verification before any data fetch/render
-  let rol = user.user_metadata?.role || user.user_metadata?.rol;
-  if (!rol && user.id) {
-    try {
-      const timeoutPromise = new Promise<{ data: null }>((resolve) => setTimeout(() => resolve({ data: null }), 300));
-      const res = await Promise.race([
-        supabase.from('users').select('rol, workspace_id').eq('id', user.id).single(),
-        timeoutPromise,
-      ]);
-      if (res && 'data' in res && (res.data as { rol?: string })?.rol) {
-        rol = (res.data as { rol?: string }).rol;
-      }
-    } catch {}
-  }
-  if (!rol) rol = 'gestor';
-
+  // La autorización siempre se basa en el contexto verificado, nunca en user_metadata
+  // ni en coincidencias de texto del email.
   const accessContext = await getServerAccessContext(accessToken);
-
-  if (
-    accessContext?.actor === 'delegado' ||
-    rol === 'delegado' ||
-    user.email?.toLowerCase().includes('delegado')
-  ) {
+  if (accessContext?.actor === 'delegado') {
     return (
-      <div data-testid="owner-only-forbidden" className="p-8 max-w-2xl mx-auto my-12 text-center">
+      <div data-testid="owner-only-forbidden" className="max-w-xl mx-auto my-12 p-8 rounded-2xl border border-border text-center">
         <ShieldAlert className="w-12 h-12 mx-auto text-amber-600 mb-3" />
-        <h1 className="text-2xl font-bold text-[#131F3C] dark:text-[#F5F3EE] mb-2">
-          Acceso Exclusivo del Gestor
-        </h1>
-        <p className="text-sm text-[#667085] dark:text-[#AEB7C7]">
-          El registro completo de actividad y auditoría de eventos está reservado al Gestor titular.
-        </p>
+        <h1 className="text-2xl font-semibold mb-2">Acceso exclusivo del Gestor</h1>
+        <p className="text-sm text-muted-foreground">El historial completo de actividad solo está disponible para el Gestor titular.</p>
       </div>
     );
   }
-
-  const isApiErrorRequested = searchParams?.state === 'api-error' || searchParams?.['api-error'] === 'true';
-  const isEmptyRequested = searchParams?.state === 'empty' || searchParams?.empty === 'true';
-
-  if (isApiErrorRequested) {
-    return <LogsClientView initialLogs={[]} initialError={true} />;
+  if (!accessToken || accessContext?.actor !== 'gestor') {
+    return <LogsClientView initialError locale={locale} />;
   }
 
-  if (isEmptyRequested) {
-    return <LogsClientView initialLogs={[]} initialError={false} />;
-  }
-
-  // Fetch real authoritative logs from API
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
-  let initialLogs: LogEntry[] = [];
-  let fetchFailed = false;
+  const pageValue = typeof searchParams?.page === 'string' ? searchParams.page : '1';
+  const page = /^[1-9]\d*$/.test(pageValue) ? Math.min(100000, Number(pageValue)) : 1;
+  const offset = (page - 1) * PAGE_SIZE;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) return <LogsClientView initialError locale={locale} />;
 
   try {
-    const res = await fetch(`${apiUrl}/logs`, {
-      headers: { Authorization: `Bearer ${accessToken || ''}` },
+    const response = await fetch(apiUrl + '/logs?limit=' + PAGE_SIZE + '&offset=' + offset, {
+      headers: { Authorization: 'Bearer ' + accessToken },
       cache: 'no-store',
+      signal: AbortSignal.timeout(12000),
     });
-    if (res.ok) {
-      const json = await res.json();
-      const logsArray = (Array.isArray(json) ? json : json.data || []) as Array<{
-        id: string;
-        actor_id: string;
-        actor_rol: 'gestor' | 'delegado' | 'sistema';
-        accion: LogEntry['accion'];
-        recurso_tipo: LogEntry['entidadTipo'];
-        recurso_id?: string;
-        created_at: string;
-      }>;
-      initialLogs = logsArray.map((l) => ({
-        id: l.id,
-        actorNombre: l.actor_rol === 'gestor' ? 'Gestor Principal' : 'Delegado',
-        actorEmail: l.actor_id?.includes('@') ? l.actor_id : `actor:${l.actor_id?.slice(0, 8)}...`,
-        actorRol: l.actor_rol,
-        accion: l.accion,
-        entidadTipo: l.recurso_tipo,
-        entidadRef: l.recurso_id || '-',
-        detalles: `${l.accion} sobre ${l.recurso_tipo}`,
-        fecha: new Date(l.created_at).toISOString().replace('T', ' ').slice(0, 16),
-        ipOrigen: '127.0.0.1',
-      }));
-    } else {
-      fetchFailed = true;
-    }
-  } catch {
-    // Fail closed
-    fetchFailed = true;
-    initialLogs = [];
-  }
+    if (!response.ok) throw new Error('Falló la consulta de auditoría');
 
-  return <LogsClientView initialLogs={initialLogs} initialError={fetchFailed && initialLogs.length === 0} />;
+    const body: unknown = await response.json();
+    if (!body || typeof body !== 'object' || !('data' in body) || !Array.isArray(body.data)) {
+      throw new Error('La API devolvió un formato de auditoría inválido');
+    }
+    const raw = body as { data: RawAuditEvent[]; total?: number };
+    const logs: LogEntry[] = raw.data.map(event => ({
+      id: event.id,
+      actorId: event.actor_id,
+      actorNombre: event.actor_nombre || null,
+      actorRol: event.actor_rol,
+      accion: event.accion,
+      entidadTipo: event.recurso_tipo,
+      entidadRef: event.recurso_id || null,
+      recursoNombre: event.recurso_nombre || null,
+      objetivoNombre: event.objetivo_nombre || null,
+      metadata: event.metadata && typeof event.metadata === 'object' && !Array.isArray(event.metadata) ? event.metadata : {},
+      fecha: event.created_at,
+    }));
+    const total = Number.isSafeInteger(raw.total) && (raw.total as number) >= 0 ? raw.total! : logs.length;
+    return <LogsClientView locale={locale} initialLogs={logs} total={total} currentPage={page} pageSize={PAGE_SIZE} />;
+  } catch {
+    return <LogsClientView initialError locale={locale} />;
+  }
 }
