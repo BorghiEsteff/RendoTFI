@@ -20,6 +20,7 @@ import { MetricasModule } from './metricas/metricas.module.js';
 import { AfipModule } from './afip/afip.module.js';
 import { AuthorizationModule } from './authorization/authorization.module.js';
 import { DevModule } from './dev/dev.module.js';
+import { ObligacionesModule } from './obligaciones/obligaciones.module.js';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { DevModule } from './dev/dev.module.js';
     AfipModule,
     AuthorizationModule,
     DevModule,
+    ObligacionesModule,
   ],
   controllers: [AppController],
   providers: [AppService, TraduccionService],
