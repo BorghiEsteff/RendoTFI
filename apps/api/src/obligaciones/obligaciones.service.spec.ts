@@ -66,4 +66,54 @@ describe('Gastos — autorización en cada recurso', () => {
     await expect(service.resumen(actor, 'valid-token', [unitId], '2026-99')).rejects.toBeInstanceOf(BadRequestException);
     expect(db.getClient).not.toHaveBeenCalled();
   });
+  it('marca un pago en el período correcto sin asumir pagos de otros meses', async () => {
+    const { service, db } = mockService(true, true);
+    const query = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: {
+        id: obligationId, unidad_id: unitId, gestor_id: actor.id,
+        periodo_inicio: '2026-11-01', frecuencia: 'mensual', activo: true,
+        monto_estimado: 5000,
+      }, error: null }),
+    };
+    const paymentQuery = {
+      upsert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: { estado: 'pagado', periodo: '2026-11-01' }, error: null }),
+    };
+    db.getClient.mockReturnValue({
+      from: vi.fn((table: string) => table === 'unidad_obligaciones' ? query : paymentQuery),
+    } as any);
+    const result = await service.marcar(actor, 'valid-token', unitId, obligationId, {
+      periodo: '2026-11', estado: 'pagado', monto_pagado: 3500,
+    });
+    expect(result.estado).toBe('pagado');
+    expect(paymentQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        obligacion_id: obligationId, unidad_id: unitId, periodo: '2026-11-01',
+        estado: 'pagado', monto_pagado: 3500, pagado_por: actor.id,
+      }),
+      expect.objectContaining({ onConflict: 'obligacion_id,periodo' }),
+    );
+  });
+
+  it('rechaza intentos de registrar una cuota fuera de su frecuencia', async () => {
+    const { service, db } = mockService(true, true);
+    db.getClient.mockReturnValue({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: {
+          id: obligationId, unidad_id: unitId, gestor_id: actor.id,
+          periodo_inicio: '2026-11-01', frecuencia: 'anual', activo: true,
+          monto_estimado: null,
+        }, error: null }),
+      })),
+    } as any);
+    await expect(service.marcar(actor, 'valid-token', unitId, obligationId, {
+      periodo: '2026-12', estado: 'pagado',
+    })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
 });
