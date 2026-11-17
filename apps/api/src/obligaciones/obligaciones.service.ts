@@ -13,6 +13,31 @@ import {
 
 const BAD_ID = 'Unidad u obligación no encontrada o fuera de alcance';
 
+export type EstadoConcepto = 'pagado' | 'pendiente' | 'vencido' | 'sin_vencimiento';
+export interface ConceptoPanel {
+  id: string;
+  nombre: string;
+  tipo: string;
+  frecuencia: string;
+  responsable: string;
+  moneda: string;
+  monto_estimado: number | null;
+  monto_pagado: number | null;
+  estado: EstadoConcepto;
+  vencimiento: string | null;
+  periodos_vencidos: number;
+}
+
+export interface ResumenPanelUnidad {
+  estado: ReturnType<typeof resumenUnidad>['estado'];
+  total: number;
+  pagadas: number;
+  pendientes: number;
+  vencidas: number;
+  conceptos?: ConceptoPanel[];
+}
+
+
 function validarPeriodo(value: string): string {
   if (mesNumero(value) === null) throw new BadRequestException('Período inválido (AAAA-MM)');
   return value;
@@ -66,7 +91,10 @@ export class ObligacionesService {
   }
 
   /** Access checked for every requested unit before any privileged lookup. */
-  async resumen(actor: AuthenticatedUser, token: string, unidadIds: string[], periodoRaw?: string) {
+  async resumen(
+    actor: AuthenticatedUser, token: string, unidadIds: string[],
+    periodoRaw?: string, incluirConceptos = false,
+  ) {
     const periodo = validarPeriodo(periodoRaw || mesActual());
     if (unidadIds.length > 100 || new Set(unidadIds).size !== unidadIds.length) {
       throw new BadRequestException('Solicitá entre 1 y 100 unidades distintas');
@@ -89,13 +117,38 @@ export class ObligacionesService {
     const obligaciones = (obligationsResult.data ?? []) as Array<ObligacionBase & { unidad_id: string }>;
     const pagos = (paymentsResult.data ?? []) as Array<PeriodoPago & { unidad_id: string }>;
     const today = hoyLocal();
-    const unidades: Record<string, ReturnType<typeof resumenUnidad>> = {};
+    const unidades: Record<string, ResumenPanelUnidad> = {};
     for (const id of unidadIds) {
-      unidades[id] = resumenUnidad(
-        obligaciones.filter(o => o.unidad_id === id),
-        pagos.filter(p => p.unidad_id === id),
-        periodo, today,
-      );
+      const conceptosUnidad = obligaciones.filter(o => o.unidad_id === id);
+      const pagosUnidad = pagos.filter(p => p.unidad_id === id);
+      const estado = resumenUnidad(conceptosUnidad, pagosUnidad, periodo, today);
+      const result: ResumenPanelUnidad = { ...estado };
+      if (incluirConceptos) {
+        const pagosDelMes = new Map(pagosUnidad.filter(p => p.periodo.slice(0, 7) === periodo)
+          .map(p => [p.obligacion_id, p]));
+        result.conceptos = conceptosUnidad.map(item => {
+          const aplica = esPeriodoAplicable(item, periodo);
+          const vencimiento = aplica ? vencimientoMes(periodo, item.dia_vencimiento) : null;
+          const pago = pagosDelMes.get(item.id);
+          const itemResumen = resumenUnidad([item], pagosUnidad, periodo, today);
+          const estadoConcepto: EstadoConcepto = !aplica ? 'sin_vencimiento'
+            : pago?.estado === 'pagado' ? 'pagado'
+              : vencimiento && vencimiento < today ? 'vencido' : 'pendiente';
+          return {
+            id: item.id, nombre: item.nombre, tipo: item.tipo, frecuencia: item.frecuencia,
+            responsable: item.responsable, moneda: item.moneda,
+            monto_estimado: item.monto_estimado, monto_pagado: pago?.estado === 'pagado' ? (pago.monto_pagado ?? null) : null,
+            estado: estadoConcepto, vencimiento,
+            periodos_vencidos: itemResumen.vencidas,
+          };
+        }).sort((a, b) => {
+          const rank: Record<EstadoConcepto, number> = {
+            vencido: 0, pendiente: 1, pagado: 2, sin_vencimiento: 3,
+          };
+          return rank[a.estado] - rank[b.estado] || a.nombre.localeCompare(b.nombre, 'es');
+        });
+      }
+      unidades[id] = result;
     }
     return { periodo, unidades };
   }
