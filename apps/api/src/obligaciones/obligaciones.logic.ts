@@ -54,7 +54,7 @@ export function vencimientoMes(periodo: string, dia: number): string | null {
   return periodo + '-' + String(dia).padStart(2, '0');
 }
 
-/** A payment from a different period can never mark the current period as paid. */
+/** A paid current month does NOT hide historical unpaid periods. */
 export function resumenUnidad(
   obligaciones: ObligacionBase[],
   pagos: PeriodoPago[],
@@ -62,21 +62,31 @@ export function resumenUnidad(
   today: string,
 ): { estado: EstadoObligacion; total: number; pagadas: number; pendientes: number; vencidas: number } {
   const activas = obligaciones.filter(o => o.activo);
-  if (activas.length === 0) return { estado: 'sin_configurar', total: 0, pagadas: 0, pendientes: 0, vencidas: 0 };
-  const aplicables = activas.filter(o => esPeriodoAplicable(o, periodo));
-  const byId = new Map(pagos.filter(p => p.periodo.slice(0, 7) === periodo).map(p => [p.obligacion_id, p]));
-  let pagadas = 0, pendientes = 0, vencidas = 0;
-  for (const item of aplicables) {
-    const pago = byId.get(item.id);
-    if (pago?.estado === 'pagado') {
-      pagadas++;
-    } else if ((vencimientoMes(periodo, item.dia_vencimiento) ?? '9999-12-31') < today) {
-      vencidas++;
-    } else {
-      pendientes++;
+  if (!activas.length) return { estado: 'sin_configurar', total: 0, pagadas: 0, pendientes: 0, vencidas: 0 };
+  const current = mesNumero(periodo);
+  if (current === null) return { estado: 'sin_configurar', total: 0, pagadas: 0, pendientes: 0, vencidas: 0 };
+  const paid = new Set(pagos.filter(p => p.estado === 'pagado')
+    .map(p => p.obligacion_id + ':' + p.periodo.slice(0, 7)));
+  let total = 0, pagadas = 0, pendientes = 0, vencidas = 0;
+  for (const item of activas) {
+    const start = mesNumero(item.periodo_inicio.slice(0, 7));
+    if (start === null || start > current) continue;
+    // Bound is determined by the validated 2000..2200 date window (< 2,412 iterations).
+    for (let at = start; at <= current; at++) {
+      const year = Math.floor(at / 12);
+      const month = String((at % 12) + 1).padStart(2, '0');
+      const monthKey = year + '-' + month;
+      if (!esPeriodoAplicable(item, monthKey)) continue;
+      const settled = paid.has(item.id + ':' + monthKey);
+      const isCurrent = at === current;
+      if (isCurrent) {
+        total++;
+        if (settled) pagadas++;
+        else if ((vencimientoMes(monthKey, item.dia_vencimiento) ?? '9999-12-31') >= today) pendientes++;
+      }
+      if (!settled && (vencimientoMes(monthKey, item.dia_vencimiento) ?? '9999-12-31') < today) vencidas++;
     }
   }
-  const total = aplicables.length;
-  const estado: EstadoObligacion = !total ? 'sin_vencimientos' : vencidas ? 'vencido' : pendientes ? 'pendiente' : 'al_dia';
+  const estado: EstadoObligacion = vencidas ? 'vencido' : pendientes ? 'pendiente' : total ? 'al_dia' : 'sin_vencimientos';
   return { estado, total, pagadas, pendientes, vencidas };
 }
