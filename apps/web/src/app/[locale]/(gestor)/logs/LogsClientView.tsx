@@ -135,7 +135,7 @@ function presentation(log: LogEntry) {
     const permission = textField(log.metadata.permiso);
     const scope = textField(log.metadata.alcance_tipo);
     if (permission) detail.push('Permiso: ' + (permission === 'gestionar' ? 'Gestionar' : permission === 'ver' ? 'Solo lectura' : permission));
-    if (scope) detail.push('Alcance: ' + ({ cuenta: 'Toda la cuenta', grupo: 'Un grupo', unidades: 'Unidades seleccionadas' } as Record<string, string>)[scope] || 'Alcance: ' + scope);
+    if (scope) detail.push('Alcance: ' + (({ cuenta: 'Toda la cuenta', grupo: 'Un grupo', unidades: 'Unidades seleccionadas' } as Record<string, string>)[scope] || scope));
   }
   if (log.accion === 'cambiar_estado_unidad') {
     const from = textField(log.metadata.estado_anterior);
@@ -162,7 +162,6 @@ export default function LogsClientView({
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [showTechnical, setShowTechnical] = useState(false);
   const currentLocale = locale === 'pt' ? 'pt-BR' : locale === 'en' ? 'en-US' : 'es-AR';
   const formatDate = (raw: string) => {
     const parsed = new Date(raw);
